@@ -1,0 +1,134 @@
+- id: '1774333903458'
+  name: Party Time
+  entities:
+    light.ceilingfanlight:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - hs
+      icon: mdi:ceiling-fan-light
+      friendly_name: Ceiling Fan Light
+      supported_features: 0
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 360
+      - 100
+      rgb_color:
+      - 255
+      - 0
+      - 0
+      xy_color:
+      - 0.701
+      - 0.299
+      state: 'on'
+    light.counterlamp1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - hs
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 36
+      - 100
+      rgb_color:
+      - 255
+      - 153
+      - 0
+      xy_color:
+      - 0.579
+      - 0.403
+      icon: mdi:lamp
+      friendly_name: Left Lamp
+      supported_features: 0
+      state: 'on'
+    light.counterlamp2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - hs
+      icon: mdi:lamp
+      friendly_name: Right Lamp
+      supported_features: 0
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 298
+      - 100
+      rgb_color:
+      - 247
+      - 0
+      - 255
+      xy_color:
+      - 0.375
+      - 0.15
+      state: 'on'
+    light.biglamp1:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - hs
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 118
+      - 100
+      rgb_color:
+      - 8
+      - 255
+      - 0
+      xy_color:
+      - 0.174
+      - 0.746
+      friendly_name: BigLamp1
+      supported_features: 0
+      state: 'on'
+    light.biglamp2:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6500
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - color_temp
+      - hs
+      color_mode: hs
+      brightness: 255
+      color_temp_kelvin:
+      color_temp:
+      hs_color:
+      - 234
+      - 100
+      rgb_color:
+      - 0
+      - 25
+      - 255
+      xy_color:
+      - 0.136
+      - 0.045
+      icon: mdi:lamp
+      friendly_name: Big Lamp Two
+      supported_features: 0
+      state: 'on'
+  icon: mdi:party-popper
+  metadata: {}

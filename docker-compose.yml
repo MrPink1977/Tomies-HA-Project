@@ -1,0 +1,174 @@
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - C:/AI_Projects/ha_knowledge_base/chroma_db:/knowledge_base:ro
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
+    # privileged: true  # Comment out; re-enable only if hardware access breaks
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto  # Wait for MQTT
+
+  freya-visualizer:
+    container_name: freya-visualizer
+    build:
+      context: ./freya-visualizer
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    environment:
+      - TZ=America/New_York
+      - HA_URL=http://homeassistant:8123
+      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
+      - MEDIA_PLAYER_ENTITY=media_player.home_assistant_voice_0a52fa_media_player
+    networks:
+      - ha_network
+    depends_on:
+      - homeassistant
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks:
+      - ha_network
+
+  wyoming-whisper:
+    container_name: wyoming-whisper
+    image: rhasspy/wyoming-whisper:latest
+    volumes:
+      - ./whisper_data:/data
+    ports:
+      - "10300:10300"
+    command: --model base --language en
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto  # If it uses MQTT
+
+  wyoming-piper:
+    container_name: wyoming-piper
+    image: rhasspy/wyoming-piper:latest
+    volumes:
+      - ./piper_data:/data
+    ports:
+      - "10200:10200"
+    command: --voice en_US-lessac-medium
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+
+  wyoming-openwakeword:
+    container_name: wyoming-openwakeword
+    image: rhasspy/wyoming-openwakeword:latest
+    volumes:
+      - ./openwakeword_data:/data
+      - ./config/custom_wakewords:/custom
+    ports:
+      - "10400:10400"
+    command: --preload-model hey_freya --custom-model-dir /custom
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:latest
+    volumes:
+      - ./ollama_data:/root/.ollama
+      - ./ollama-init.sh:/ollama-init.sh:ro  # Mount startup script
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+    environment:
+      - TZ=America/New_York
+      - OLLAMA_KEEP_ALIVE=-1  # Keep models loaded forever
+      - OLLAMA_MAX_LOADED_MODELS=2  # Allow 2 models in memory
+    networks:
+      - ha_network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    entrypoint: ["/bin/sh", "/ollama-init.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:11434/api/tags || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  chromadb:
+    container_name: chromadb
+    image: chromadb/chroma:latest
+    volumes:
+      - ./chroma_data:/chroma/chroma
+    ports:
+      - "8000:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+      - CHROMA_PERSIST_PATH=/chroma/chroma    # <-- explicitly declare the persist path
+      - TZ=America/New_York
+    restart: unless-stopped
+    networks:
+      - ha_network
+
+  esphome:
+    container_name: esphome
+    image: ghcr.io/esphome/esphome:latest
+    volumes:
+      - ./esphome:/config
+    ports:
+      - "6052:6052"
+    restart: unless-stopped
+    networks:
+      - ha_network
+
+  aircon:
+    image: deiger/aircon
+    container_name: aircon
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config/options.json:/data/options.json
+      - ./config:/data
+    environment:
+      - CONFIG_DIR=/data
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+
+networks:
+  ha_network:
+    driver: bridge

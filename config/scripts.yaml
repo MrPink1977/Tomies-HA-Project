@@ -1,0 +1,35 @@
+close_table:
+  sequence:
+  - action: mqtt.publish
+    data:
+      qos: '0'
+      topic: awesome_table/cmd
+      payload: CLOSE
+    alias: Close Table
+  - action: mqtt.publish
+    data:
+      qos: '0'
+      topic: awesome_table/cmd
+      payload: OPEN
+    alias: Open Table
+  alias: Close Table
+  description: ''
+open_table:
+  sequence:
+  - action: mqtt.publish
+    data:
+      qos: '0'
+      topic: awesome_table/cmd
+      payload: OPEN
+  alias: Open Table
+  description: ''
+stop_table:
+  sequence:
+  - action: mqtt.publish
+    data:
+      qos: '0'
+      topic: awesome_table/cmd
+      payload: STOP
+    alias: stop Table
+  alias: Stop Table
+  description: ''

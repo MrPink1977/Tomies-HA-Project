@@ -1,0 +1,366 @@
+default_config:
+
+# Loads default set of integrations. Do not remove.
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Time & Date sensor for LCARS clock
+sensor:
+  - platform: time_date
+    display_options:
+      - 'time'
+  - platform: rest
+    name: "Table Status"
+    resource: "http://192.168.68.71/status"
+    value_template: "{{ value_json.state }}"
+    json_attributes:
+      - fault
+    scan_interval: 60
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 172.18.0.0/16  # Trusts Docker bridge range
+
+homeassistant:
+  packages: !include_dir_named packages
+
+# --- REST commands for the table ---
+rest_command:
+  table_open:
+    url: "http://192.168.68.71/open"
+  table_close:
+    url: "http://192.168.68.71/close"
+  table_stop:
+    url: "http://192.168.68.71/stop"
+  table_reset:
+    url: "http://192.168.68.71/reset"
+  table_toggle:
+    url: "http://192.168.68.71/toggle"
+    
+# --- Template cover for the table ---
+cover:
+  - platform: template
+    covers:
+      awesome_table:
+        friendly_name: "Awesome Table"
+        open_cover:
+          - service: rest_command.table_open
+        close_cover:
+          - service: rest_command.table_close
+        stop_cover:
+          - service: rest_command.table_stop
+        value_template: >-
+          {% if is_state('sensor.table_status', 'OPENING') %} opening
+          {% elif is_state('sensor.table_status', 'CLOSING') %} closing
+          {% elif is_state('sensor.table_status', 'FAULT') %} off
+          {% else %} closed
+          {% endif %}
+
+# --- Custom Tools for Home Agent ---
+home_agent:
+  tools_custom:
+
+    # --- USEFUL APIs ---
+    - name: web_search
+      description: "Search the web for real-time information on any topic"
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The search query"
+        required:
+          - query
+      handler:
+        type: rest
+        url: "https://api.search.brave.com/res/v1/web/search"
+        method: GET
+        headers:
+          X-Subscription-Token: "BSAbUbh8jN3VAT2MyUa2CFjoT7YwBE_"
+        query_params:
+          q: "{{ query }}"
+          count: 5
+          search_lang: "en"
+        timeout: 15
+
+    - name: get_instant_answer
+      description: "Get a quick, instant answer to a factual question using DuckDuckGo"
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The question to ask"
+        required:
+          - query
+      handler:
+        type: rest
+        url: "https://api.duckduckgo.com/"
+        method: GET
+        query_params:
+          q: "{{ query }}"
+          format: "json"
+        timeout: 10
+
+    - name: ask_wolfram_alpha
+      description: "Ask a computational or factual question to Wolfram Alpha"
+      parameters:
+        type: object
+        properties:
+          query:
+            type: string
+            description: "The question for Wolfram Alpha"
+          units:
+            type: string
+            enum: [metric, imperial]
+            description: "System of units to use (metric or imperial)"
+        required:
+          - query
+      handler:
+        type: rest
+        url: "http://api.wolframalpha.com/v1/result"
+        method: GET
+        query_params:
+          appid: "6JXUA7-K85G"
+          i: "{{ query }}"
+          units: "{{ units | default('imperial') }}"
+        timeout: 15
+
+    - name: get_latest_news
+      description: "Get the latest news headlines from around the world"
+      parameters:
+        type: object
+        properties:
+          country:
+            type: string
+            description: "Country code (us, gb, ca, au, etc.) - defaults to us"
+          category:
+            type: string
+            description: "News category: business, entertainment, general, health, science, sports, technology"
+      handler:
+        type: rest
+        url: "https://newsapi.org/v2/top-headlines"
+        method: GET
+        query_params:
+          country: "{{ country | default('us') }}"
+          category: "{{ category | default('general') }}"
+          apiKey: "8adf02de2b7941d28538ec81c0e5bc8e"
+          pageSize: 5
+        timeout: 10
+
+    - name: get_currency_exchange_rate
+      description: "Get the current exchange rate between two currencies"
+      parameters:
+        type: object
+        properties:
+          from_currency:
+            type: string
+            description: "Currency to convert from (e.g., USD, EUR, GBP)"
+          to_currency:
+            type: string
+            description: "Currency to convert to (e.g., USD, EUR, GBP)"
+          amount:
+            type: number
+            description: "Amount to convert (optional)"
+        required:
+          - from_currency
+          - to_currency
+      handler:
+        type: rest
+        url: "https://v6.exchangerate-api.com/v6/8c1eaf4c9a1a35777b50d5d4/pair/{{ from_currency }}/{{ to_currency }}"
+        method: GET
+        timeout: 10
+
+    # --- Fun & Entertainment ---
+    - name: get_bored_activity
+      description: "Get a random activity suggestion when you are bored"
+      handler:
+        type: rest
+        url: "https://www.boredapi.com/api/activity"
+        method: GET
+        timeout: 5
+
+    - name: get_random_dog_picture
+      description: "Get a random picture of a dog"
+      handler:
+        type: rest
+        url: "https://dog.ceo/api/breeds/image/random"
+        method: GET
+        timeout: 10
+
+    - name: get_number_fact
+      description: "Get an interesting fact about a number"
+      parameters:
+        type: object
+        properties:
+          number:
+            type: integer
+            description: "The number to get a fact about"
+        required:
+          - number
+      handler:
+        type: rest
+        url: "http://numbersapi.com/{{ number }}"
+        method: GET
+        timeout: 5
+
+    # --- Original Working Tools ---
+    - name: get_random_joke
+      description: "Get a random joke to lighten the mood"
+      handler:
+        type: rest
+        url: "https://official-joke-api.appspot.com/random_joke"
+        method: GET
+        timeout: 5
+
+    - name: get_recent_earthquakes
+      description: "Get recent significant earthquakes worldwide from USGS"
+      parameters:
+        type: object
+        properties:
+          magnitude:
+            type: string
+            description: "Minimum magnitude filter"
+          timeframe:
+            type: string
+            enum: [hour, day, week, month]
+            description: "Time period to search"
+        required:
+          - timeframe
+      handler:
+        type: rest
+        url: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_{{ timeframe }}.geojson"
+        method: GET
+        timeout: 15
+
+    - name: get_space_weather
+      description: "Get current space weather conditions including solar activity and geomagnetic storms"
+      handler:
+        type: rest
+        url: "https://services.swpc.noaa.gov/products/noaa-scales.json"
+        method: GET
+        timeout: 10
+
+    - name: get_iss_location
+      description: "Get current International Space Station location"
+      handler:
+        type: rest
+        url: "http://api.open-notify.org/iss-now.json"
+        method: GET
+        timeout: 10
+
+    - name: get_wikipedia_summary
+      description: "Get a concise summary of a Wikipedia article"
+      parameters:
+        type: object
+        properties:
+          title:
+            type: string
+            description: "Article title or topic"
+        required:
+          - title
+      handler:
+        type: rest
+        url: "https://en.wikipedia.org/api/rest_v1/page/summary/{{ title }}"
+        method: GET
+        headers:
+          Accept: "application/json"
+        timeout: 10
+
+    - name: get_trivia
+      description: "Get random interesting trivia"
+      handler:
+        type: rest
+        url: "https://uselessfacts.jsph.pl/random.json?language=en"
+        method: GET
+        timeout: 5
+
+    - name: get_cat_fact
+      description: "Get a random interesting fact about cats"
+      handler:
+        type: rest
+        url: "https://catfact.ninja/fact"
+        method: GET
+        timeout: 5
+
+    - name: get_chuck_norris_joke
+      description: "Get a random Chuck Norris joke"
+      handler:
+        type: rest
+        url: "https://api.chucknorris.io/jokes/random"
+        method: GET
+        timeout: 5
+
+    - name: get_random_advice
+      description: "Get random life advice"
+      handler:
+        type: rest
+        url: "https://api.adviceslip.com/advice"
+        method: GET
+        timeout: 5
+
+    - name: get_kanye_quote
+      description: "Get a random inspirational quote from Kanye West"
+      handler:
+        type: rest
+        url: "https://api.kanye.rest"
+        method: GET
+        timeout: 5
+
+    - name: get_country_info
+      description: "Get detailed information about any country including population, capital, currencies, and flags"
+      parameters:
+        type: object
+        properties:
+          country:
+            type: string
+            description: "Country name or code (e.g., France, USA, JP)"
+        required:
+          - country
+      handler:
+        type: rest
+        url: "https://restcountries.com/v3.1/name/{{ country }}"
+        method: GET
+        timeout: 10
+
+    - name: get_crypto_price
+      description: "Get current cryptocurrency prices and market data"
+      parameters:
+        type: object
+        properties:
+          coin_id:
+            type: string
+            description: "Cryptocurrency ID (e.g., bitcoin, ethereum, dogecoin)"
+          currency:
+            type: string
+            description: "Target currency (e.g., usd, eur, gbp)"
+        required:
+          - coin_id
+      handler:
+        type: rest
+        url: "https://api.coingecko.com/api/v3/simple/price"
+        method: GET
+        query_params:
+          ids: "{{ coin_id }}"
+          vs_currencies: "{{ currency | default('usd') }}"
+          include_24hr_change: "true"
+          include_market_cap: "true"
+        timeout: 10
+
+input_boolean:
+  freya_convo_active:
+    name: Freya Conversation Active
+    icon: mdi:microphone
+
+input_number:
+  freya_follow_up_count:
+    name: Freya Follow-up Count
+    min: 0
+    max: 10
+    step: 1
+    mode: box
