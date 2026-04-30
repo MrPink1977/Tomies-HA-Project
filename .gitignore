@@ -19,3 +19,10 @@ Thumbs.db
 config/backups/
 config/home-assistant_v2.db
 config/.skyfield/
+config/secrets.yaml
+config/.storage/
+config/.cloud/
+config/home-assistant_v2.db*
+config/backups/
+config/.skyfield/
+home voice pe password.txt
