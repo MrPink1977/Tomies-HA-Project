@@ -1,0 +1,13 @@
+{
+  "domain": "meshtastic_ui",
+  "name": "Meshtastic UI",
+  "codeowners": ["@Daring-Designs"],
+  "config_flow": true,
+  "dependencies": ["websocket_api", "http", "frontend"],
+  "documentation": "https://github.com/Daring-Designs/meshtastic-ui-ha",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/Daring-Designs/meshtastic-ui-ha/issues",
+  "requirements": ["meshtastic>=2.5.0"],
+  "version": "1.0.5"
+}

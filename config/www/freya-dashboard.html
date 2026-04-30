@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>FREYA // CONTROL</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
+
+:root {
+  --bg:        #0c0c0c;
+  --bg2:       #111111;
+  --bg3:       #161616;
+  --panel:     #141414;
+  --border:    #2a2a2a;
+  --border2:   #333;
+  --amber:     #f0a000;
+  --amber2:    #ffbe40;
+  --amber-dim: #7a5000;
+  --amber-glow:#f0a00030;
+  --red:       #e03030;
+  --green:     #40c060;
+  --blue:      #4090d0;
+  --text:      #c8c0b0;
+  --text-dim:  #555;
+  --text-head: #e8e0d0;
+  --scratch: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 3px
+  );
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-image: var(--scratch);
+}
+
+/* ── HEADER ── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  background: var(--bg2);
+  border-bottom: 2px solid var(--amber);
+  box-shadow: 0 2px 20px var(--amber-glow);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: var(--amber);
+  text-shadow: 0 0 20px var(--amber);
+  line-height: 1;
+}
+.logo span { color: var(--text-dim); font-size: 11px; letter-spacing: 3px; display: block; margin-top: -2px; }
+
+.header-right { display: flex; align-items: center; gap: 12px; }
+
+.time-display {
+  text-align: right;
+  font-family: 'Share Tech Mono', monospace;
+}
+.time-display .time { font-size: 18px; color: var(--amber2); letter-spacing: 2px; }
+.time-display .date { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; }
+
+/* Freya mini widget */
+#freya-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+#freya-widget:hover { border-color: var(--amber-dim); }
+#freya-widget.speaking { border-color: var(--amber); box-shadow: 0 0 10px var(--amber-glow); }
+.freya-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); letter-spacing: 2px; }
+#freya-mini-canvas { width: 160px; height: 72px; display: block; }
+#freya-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); transition: all 0.3s; flex-shrink: 0; }
+#freya-dot.listening { background: var(--amber); box-shadow: 0 0 6px var(--amber); animation: fpulse 2s ease-in-out infinite; }
+#freya-dot.speaking  { background: var(--red);   box-shadow: 0 0 8px var(--red);   animation: fpulse 0.35s ease-in-out infinite; }
+@keyframes fpulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+#gpu-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  padding: 5px 10px;
+  border-radius: 2px;
+}
+#gpu-mini-canvas { width: 160px; height: 72px; display: block; }
+
+
+/* ── Range sliders ── */
+input[type=range] {
+  -webkit-appearance: none;
+  height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--amber);
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  background: linear-gradient(to right, var(--amber-dim), var(--border2));
+  border-radius: 2px;
+}
+
+
+/* ── BREAKER PANEL ── */
+.breaker-panel {
+  background: #0e0e0e;
+  border: 2px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.breaker-panel-header {
+  display: flex; justify-content: space-between; align-items: center;
+  border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px;
+}
+.breaker-panel-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px; letter-spacing: 4px; color: var(--amber);
+}
+.breaker-leg-labels {
+  display: grid; grid-template-columns: 1fr 40px 1fr;
+  gap: 4px; margin-bottom: 6px; text-align: center;
+  font-size: 9px; letter-spacing: 2px; color: var(--text-dim);
+}
+.breaker-rows { display: flex; flex-direction: column; gap: 3px; }
+.breaker-row {
+  display: grid; grid-template-columns: 1fr 40px 1fr; gap: 3px; align-items: stretch;
+}
+.breaker-slot {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 2px;
+  padding: 5px 7px;
+  cursor: default;
+  transition: border-color 0.4s, background 0.4s;
+  min-height: 44px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.breaker-slot.active {
+  border-color: #2a6a2a;
+  background: #0d1f0d;
+}
+.breaker-slot.inactive {
+  border-color: #3a1010;
+  background: #150a0a;
+}
+.breaker-slot.double {
+  grid-column: span 1;
+  border-color: #333;
+}
+.breaker-slot.double.active { border-color: #2a5a2a; background: #0d1a0d; }
+.breaker-num {
+  font-size: 8px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 2px;
+}
+.breaker-label {
+  font-size: 9px; color: var(--text); letter-spacing: 1px; line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.breaker-amps {
+  font-size: 13px; font-weight: bold; margin-top: 2px;
+  color: var(--green);
+}
+.breaker-slot.inactive .breaker-amps { color: var(--red); }
+.breaker-watts {
+  font-size: 9px; color: var(--text-dim); margin-top: 1px;
+}
+.breaker-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.bus-bar { width: 6px; flex: 1; min-height: 4px; border-radius: 1px; }
+.bus-a { background: #cc4400; }
+.bus-b { background: #004499; }
+.breaker-totals {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin-top: 10px;
+}
+.breaker-total-box {
+  background: #141414; border: 1px solid #2a2a2a; border-radius: 2px;
+  padding: 8px; text-align: center;
+}
+.breaker-total-label { font-size: 8px; color: var(--text-dim); letter-spacing: 2px; }
+.breaker-total-val { font-size: 16px; color: var(--amber); margin-top: 2px; }
+.breaker-total-unit { font-size: 9px; color: var(--text-dim); }
+
+/* ── NAV TABS ── */
+#nav {
+  display: flex;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 0 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#nav::-webkit-scrollbar { display: none; }
+
+.nav-tab {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.nav-tab:hover { color: var(--text); }
+.nav-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+/* ── PAGES ── */
+.page { display: none; padding: 12px; animation: fadein 0.2s ease; }
+.page.active { display: block; }
+@keyframes fadein { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:none} }
+
+/* ── SECTION HEADER ── */
+.section-head {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: var(--amber-dim);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-head::before {
+  content: '';
+  width: 3px; height: 12px;
+  background: var(--amber);
+  display: block;
+}
+
+/* ── GRID LAYOUTS ── */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.grid-areas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── PANEL ── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber-dim), transparent);
+  opacity: 0.5;
+}
+.panel-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.panel-value {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 22px;
+  color: var(--amber2);
+  line-height: 1;
+}
+.panel-unit { font-size: 11px; color: var(--text-dim); }
+
+/* ── AREA CARDS (overview) ── */
+.area-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  min-height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.area-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--amber);
+  transform: scaleX(0);
+  transition: transform 0.25s;
+  transform-origin: left;
+}
+.area-card:hover { border-color: var(--amber-dim); box-shadow: inset 0 0 30px rgba(240,160,0,0.04); }
+.area-card:hover::after { transform: scaleX(1); }
+.area-card:active { background: #1a1a1a; }
+
+.area-name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--text-head);
+}
+.area-subtitle { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; margin-top: 2px; }
+.area-icon { font-size: 26px; opacity: 0.5; position: absolute; top: 10px; right: 12px; }
+.area-status {
+  display: flex; gap: 6px; align-items: center;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: var(--text-dim);
+}
+.status-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-dim); }
+.status-dot.on { background: var(--amber); box-shadow: 0 0 4px var(--amber); }
+
+/* ── TOGGLE BUTTONS ── */
+.toggle-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 2px;
+  padding: 10px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.toggle-btn:hover { border-color: var(--amber-dim); color: var(--amber2); }
+.toggle-btn.on {
+  background: rgba(240,160,0,0.12);
+  border-color: var(--amber);
+  color: var(--amber2);
+  box-shadow: 0 0 12px var(--amber-glow);
+}
+.toggle-btn:active { transform: scale(0.97); }
+
+/* Action buttons */
+.action-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 11px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: center;
+}
+.action-btn:hover { border-color: var(--amber-dim); color: var(--amber); }
+.action-btn:active { transform: scale(0.97); background: #1a1200; }
+.action-btn.danger { border-color: #3a1010; color: #803030; }
+.action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+/* ── STAT ROW ── */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+}
+.stat-row:last-child { border-bottom: none; }
+.stat-label { color: var(--text-dim); letter-spacing: 1px; font-size: 10px; }
+.stat-val { color: var(--amber2); }
+
+/* ── WEATHER ── */
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+}
+.weather-temp {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 52px;
+  color: var(--amber2);
+  line-height: 1;
+  text-shadow: 0 0 20px var(--amber-glow);
+}
+.weather-info { flex: 1; }
+.weather-cond { font-size: 13px; letter-spacing: 2px; color: var(--text); text-transform: uppercase; }
+.weather-sub  { font-size: 11px; color: var(--text-dim); margin-top: 3px; font-family: 'Share Tech Mono', monospace; }
+
+/* ── ENTITY ROW ── */
+.entity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+.entity-row:last-child { border-bottom: none; }
+.entity-name { font-size: 13px; letter-spacing: 1px; flex: 1; }
+.entity-id   { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: var(--text-dim); display: block; }
+
+/* ── CAMERA FEED ── */
+.camera-feed {
+  background: #050505;
+  border: 1px solid var(--border);
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.camera-feed img { width: 100%; height: 100%; object-fit: cover; display: none; }
+.camera-placeholder {
+  text-align: center;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.camera-placeholder .cam-icon { font-size: 28px; display: block; margin-bottom: 6px; opacity: 0.3; }
+.camera-label {
+  position: absolute; bottom: 6px; left: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px; color: var(--amber-dim); letter-spacing: 2px;
+  background: rgba(0,0,0,0.7); padding: 2px 6px;
+}
+
+/* ── ENERGY BARS ── */
+.energy-bar-wrap { margin: 4px 0 10px; }
+.energy-bar-label {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--text-dim); margin-bottom: 3px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.energy-bar-track {
+  height: 6px; background: var(--bg3); border: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.energy-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+  transition: width 1s ease;
+  box-shadow: 2px 0 8px var(--amber-glow);
+}
+
+/* ── BACK BUTTON ── */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 13px; letter-spacing: 3px;
+  color: var(--text-dim); cursor: pointer;
+  margin-bottom: 12px; padding: 4px 0;
+  border: none; background: none;
+  transition: color 0.2s;
+}
+.back-btn:hover { color: var(--amber); }
+
+/* ── TABLE CONTROL ── */
+.table-control {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 14px;
+  text-align: center;
+}
+.table-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 2px; margin-bottom: 10px;
+}
+.table-status span { color: var(--amber2); }
+.table-btn-row { display: flex; gap: 8px; }
+
+/* ── FREYA FULL PAGE ── */
+.freya-full-canvas {
+  width: 100%; height: 380px; display: block;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+}
+
+/* ── DIVIDER ── */
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+/* Confirm overlay */
+#confirm-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); z-index: 200;
+  align-items: center; justify-content: center;
+}
+#confirm-overlay.show { display: flex; }
+.confirm-box {
+  background: var(--bg2);
+  border: 1px solid var(--amber);
+  box-shadow: 0 0 40px var(--amber-glow);
+  padding: 24px; max-width: 280px; width: 90%;
+  text-align: center;
+}
+.confirm-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: 4px; color: var(--amber);
+  margin-bottom: 8px;
+}
+.confirm-msg { font-size: 13px; color: var(--text); margin-bottom: 18px; }
+.confirm-btns { display: flex; gap: 10px; }
+.confirm-btns button {
+  flex: 1; padding: 10px;
+  font-family: 'Rajdhani', sans-serif; font-weight: 700;
+  font-size: 13px; letter-spacing: 2px;
+  cursor: pointer; border: 1px solid;
+  transition: all 0.15s;
+}
+.confirm-yes { background: rgba(240,160,0,0.1); border-color: var(--amber); color: var(--amber); }
+.confirm-yes:hover { background: rgba(240,160,0,0.2); }
+.confirm-no  { background: var(--bg3); border-color: var(--border2); color: var(--text-dim); }
+.confirm-no:hover { border-color: var(--text-dim); color: var(--text); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); }
+
+/* margin helpers */
+.mb8  { margin-bottom: 8px; }
+.mb12 { margin-bottom: 12px; }
+.mt8  { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<!-- CONFIRM OVERLAY -->
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">CONFIRM</div>
+    <div class="confirm-msg" id="confirm-msg">Are you sure?</div>
+    <div class="confirm-btns">
+      <button class="confirm-yes" id="confirm-yes">EXECUTE</button>
+      <button class="confirm-no"  id="confirm-no">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<div id="header">
+  <div>
+    <div class="logo">FREYA <span>CONTROL SYSTEM</span></div>
+  </div>
+  <div class="header-right">
+    <div id="freya-widget" title="Freya Voice Monitor">
+      <div id="freya-dot"></div>
+      <canvas id="freya-mini-canvas" width="160" height="72"></canvas>
+      <div class="freya-label">FREYA</div>
+    </div>
+    <div id="gpu-widget" title="GPU Utilization">
+      <div class="freya-label">GPU</div>
+      <canvas id="gpu-mini-canvas" width="160" height="72"></canvas>
+      <div class="freya-label" id="gpu-mini-label">0%</div>
+    </div>
+    <div class="time-display">
+      <div class="time" id="clock">--:--</div>
+      <div class="date" id="dateline">--- -- ----</div>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div id="nav">
+  <div class="nav-tab active" data-page="overview">OVERVIEW</div>
+  <div class="nav-tab" data-page="living-room">LIVING ROOM</div>
+  <div class="nav-tab" data-page="bedroom">BEDROOM</div>
+  <div class="nav-tab" data-page="front-door">FRONT DOOR</div>
+  <div class="nav-tab" data-page="energy">ENERGY</div>
+  <div class="nav-tab" data-page="freya-page">FREYA</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ OVERVIEW -->
+<div id="page-overview" class="page active">
+
+  <div class="section-head">AREAS</div>
+  <div class="grid-areas mb12">
+
+    <div class="area-card" data-goto="living-room">
+      <div class="area-icon">🛋️</div>
+      <div>
+        <div class="area-name">LIVING ROOM</div>
+        <div class="area-subtitle">1 DEVICE</div>
+      </div>
+      <div class="area-status">
+        <div class="status-dot" id="ov-lr-dot"></div>
+        <span id="ov-lr-status">AWESOME TABLE</span>
+      </div>
+    </div>
+
+    <div class="area-card" data-goto="bedroom">
+      <div class="area-icon">🛏️</div>
+      <div>
+        <div class="area-name">BEDROOM</div>
+        <div class="area-subtitle">2 DEVICES</div>
+      </div>
+      <div class="area-status">
+        <div class="status-dot on" id="ov-br-dot"></div>
+        <span id="ov-br-status">LAMP · VOICE PE</span>
+      </div>
+    </div>
+
+    <div class="area-card" data-goto="front-door">
+      <div class="area-icon">🚪</div>
+      <div>
+        <div class="area-name">FRONT DOOR</div>
+        <div class="area-subtitle">3 DEVICES</div>
+      </div>
+      <div class="area-status">
+        <div class="status-dot" id="ov-fd-dot"></div>
+        <span id="ov-fd-status">CAMERA · MOTION · LIGHT</span>
+      </div>
+    </div>
+
+    <div class="area-card" data-goto="energy">
+      <div class="area-icon">⚡</div>
+      <div>
+        <div class="area-name">ENERGY</div>
+        <div class="area-subtitle">SENMETER CTs</div>
+      </div>
+      <div class="area-status">
+        <div class="status-dot on"></div>
+        <span id="ov-energy-watts">-- W CURRENT DRAW</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-head">WEATHER // ST. JAMES, MO</div>
+  <div class="panel mb12">
+    <div class="weather-main">
+      <div class="weather-temp" id="wx-temp">--°</div>
+      <div class="weather-info">
+        <div class="weather-cond" id="wx-cond">LOADING</div>
+        <div class="weather-sub" id="wx-sub">HI: --° / LO: --° · HUMIDITY: --%</div>
+        <div class="weather-sub" id="wx-wind">WIND: -- MPH</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">SYSTEM STATUS</div>
+  <div class="panel">
+
+    <div class="stat-row">
+      <span class="stat-label">HA CONTAINER</span>
+      <span class="stat-val" style="color:var(--green)">ONLINE</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">OLLAMA LLM</span>
+      <span class="stat-val" id="sys-ollama">CHECKING</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">CHROMADB</span>
+      <span class="stat-val" id="sys-chroma">CHECKING</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">MOSQUITTO MQTT</span>
+      <span class="stat-val" id="sys-mqtt">CHECKING</span>
+    </div>
+
+    <div class="divider" style="margin:6px 0"></div>
+
+    <div class="stat-row">
+      <span class="stat-label">VOICE PE</span>
+      <span class="stat-val" id="sys-voicepe">CHECKING</span>
+    </div>
+    <div class="stat-row" style="padding-left:16px">
+      <span class="stat-label" style="color:var(--text-dim)">↳ FREYA BRIDGE</span>
+      <span class="stat-val" id="sys-bridge">CHECKING</span>
+    </div>
+    <div class="stat-row" style="padding-left:16px">
+      <span class="stat-label" style="color:var(--text-dim)">↳ WHISPER STT</span>
+      <span class="stat-val" style="color:var(--green)">FASTER-WHISPER</span>
+    </div>
+    <div class="stat-row" style="padding-left:16px">
+      <span class="stat-label" style="color:var(--text-dim)">↳ TTS</span>
+      <span class="stat-val" id="sys-elevenlabs">CHECKING</span>
+    </div>
+    <div class="stat-row" style="padding-left:16px">
+      <span class="stat-label" style="color:var(--text-dim)">↳ WAKE WORD</span>
+      <span class="stat-val" style="color:var(--amber)">HEY_FREYA</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ LIVING ROOM -->
+<div id="page-living-room" class="page">
+  <button class="back-btn" data-goto="overview">← BACK</button>
+  <div class="section-head">LIVING ROOM</div>
+
+  <div class="panel mb12">
+    <div class="panel-title">THE AWESOME TABLE</div>
+    <div class="table-status">STATUS: <span id="table-status-text">UNKNOWN</span></div>
+    <div class="table-btn-row">
+      <button class="action-btn" onclick="confirmAction('Open the Awesome Table?', 'openTable')">▲ OPEN</button>
+      <button class="action-btn" onclick="confirmAction('Stop table actuator?', 'stopTable')">■ STOP</button>
+      <button class="action-btn" onclick="confirmAction('Close the Awesome Table?', 'closeTable')">▼ CLOSE</button>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row">
+      <span class="stat-label">OPEN BUTTON</span>
+      <span class="stat-val" style="font-size:10px">button.awesome_table_open</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">STOP BUTTON</span>
+      <span class="stat-val" style="font-size:10px">button.awesome_table_stop</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">CLOSE BUTTON</span>
+      <span class="stat-val" style="font-size:10px">button.awesome_table_close</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">DIRECT URL</span>
+      <span class="stat-val" style="font-size:10px">192.168.68.71</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ BEDROOM -->
+<div id="page-bedroom" class="page">
+  <button class="back-btn" data-goto="overview">← BACK</button>
+  <div class="section-head">BEDROOM</div>
+
+  <!-- LIGHTS -->
+  <div class="panel mb12">
+    <div class="panel-title">LIGHTS</div>
+
+    <div class="entity-row">
+      <div><div class="entity-name">Big Lamp 1</div><span class="entity-id">light.biglamp1</span></div>
+      <button class="toggle-btn" id="btn-big-lamp-1" style="width:80px" onclick="toggleLight('light.biglamp1','btn-big-lamp-1')">OFF</button>
+    </div>
+    <div class="stat-row" style="padding:4px 0 8px">
+      <span class="stat-label">BRIGHTNESS</span>
+      <input type="range" min="0" max="255" value="0" id="bri-big-lamp-1" style="flex:1;margin:0 10px" oninput="setBrightness('light.biglamp1',this.value,'btn-big-lamp-1','bri-val-big-lamp-1')">
+      <span class="stat-val" id="bri-val-big-lamp-1" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+
+    <div class="entity-row">
+      <div><div class="entity-name">Big Lamp 2</div><span class="entity-id">light.biglamp2</span></div>
+      <button class="toggle-btn" id="btn-big-lamp-2" style="width:80px" onclick="toggleLight('light.biglamp2','btn-big-lamp-2')">OFF</button>
+    </div>
+    <div class="stat-row" style="padding:4px 0 8px">
+      <span class="stat-label">BRIGHTNESS</span>
+      <input type="range" min="0" max="255" value="0" id="bri-big-lamp-2" style="flex:1;margin:0 10px" oninput="setBrightness('light.biglamp2',this.value,'btn-big-lamp-2','bri-val-big-lamp-2')">
+      <span class="stat-val" id="bri-val-big-lamp-2" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+
+    <div class="entity-row">
+      <div><div class="entity-name">Ceiling Fan Light</div><span class="entity-id">light.ceilingfanlight</span></div>
+      <button class="toggle-btn" id="btn-ceil-fan" style="width:80px" onclick="toggleLight('light.ceilingfanlight','btn-ceil-fan')">OFF</button>
+    </div>
+    <div class="stat-row" style="padding:4px 0 8px">
+      <span class="stat-label">BRIGHTNESS</span>
+      <input type="range" min="0" max="255" value="0" id="bri-ceil-fan" style="flex:1;margin:0 10px" oninput="setBrightness('light.ceilingfanlight',this.value,'btn-ceil-fan','bri-val-ceil-fan')">
+      <span class="stat-val" id="bri-val-ceil-fan" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+
+    <div class="entity-row">
+      <div><div class="entity-name">Counter Lamp Left</div><span class="entity-id">light.counterlamp1</span></div>
+      <button class="toggle-btn" id="btn-counter-1" style="width:80px" onclick="toggleLight('light.counterlamp1','btn-counter-1')">OFF</button>
+    </div>
+    <div class="stat-row" style="padding:4px 0 8px">
+      <span class="stat-label">BRIGHTNESS</span>
+      <input type="range" min="0" max="255" value="0" id="bri-counter-1" style="flex:1;margin:0 10px" oninput="setBrightness('light.counterlamp1',this.value,'btn-counter-1','bri-val-counter-1')">
+      <span class="stat-val" id="bri-val-counter-1" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+
+    <div class="entity-row">
+      <div><div class="entity-name">Counter Lamp Right</div><span class="entity-id">light.counterlamp2</span></div>
+      <button class="toggle-btn" id="btn-counter-2" style="width:80px" onclick="toggleLight('light.counterlamp2','btn-counter-2')">OFF</button>
+    </div>
+    <div class="stat-row" style="padding:4px 0 8px">
+      <span class="stat-label">BRIGHTNESS</span>
+      <input type="range" min="0" max="255" value="0" id="bri-counter-2" style="flex:1;margin:0 10px" oninput="setBrightness('light.counterlamp2',this.value,'btn-counter-2','bri-val-counter-2')">
+      <span class="stat-val" id="bri-val-counter-2" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+      <!-- TV -->
+  <div class="panel mb12">
+    <div class="panel-title">TELEVISION // SONY BRAVIA 55"</div>
+    <div class="entity-row">
+      <div>
+        <div class="entity-name" id="tv-app">--</div>
+        <span class="entity-id">media_player.android_tv_192_168_68_60</span>
+      </div>
+      <button class="toggle-btn" id="btn-tv" style="width:80px" onclick="toggleTV()">OFF</button>
+    </div>
+    <div class="divider"></div>
+    <div class="stat-row" style="padding:6px 0">
+      <span class="stat-label">VOLUME</span>
+      <input type="range" min="0" max="1" step="0.01" value="0" id="tv-vol-slider" style="flex:1;margin:0 10px" oninput="setTVVolume(this.value)">
+      <span class="stat-val" id="tv-vol-val" style="width:36px;text-align:right">--%</span>
+    </div>
+    <div class="divider"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px">
+      <button class="action-btn" onclick="haCall('media_player','media_play_pause',ENTITIES.androidTV)">⏯ PLAY</button>
+      <button class="action-btn" onclick="haCall('media_player','media_stop',ENTITIES.androidTV)">⏹ STOP</button>
+      <button class="action-btn" onclick="haCall('media_player','volume_mute',ENTITIES.androidTV,{is_volume_muted:true})">🔇 MUTE</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════════ FRONT DOOR -->
+<div id="page-front-door" class="page">
+  <button class="back-btn" data-goto="overview">← BACK</button>
+  <div class="section-head">FRONT DOOR</div>
+
+  <div class="camera-feed mb12">
+    <img id="reolink-img" src="" alt="">
+    <div class="camera-placeholder">
+      <span class="cam-icon">📷</span>
+      REOLINK FEED<br>
+      <span style="font-size:9px;color:var(--text-dim)">camera.front_door_snapshots_fluent</span>
+    </div>
+    <div class="camera-label">FRONT DOOR // REOLINK</div>
+  </div>
+
+  <!-- LIGHTS -->
+  <div class="panel mb12">
+    <div class="panel-title">LIGHTS</div>
+    <div class="entity-row">
+      <div>
+        <div class="entity-name">Porch Flood Light</div>
+        <span class="entity-id">light.porchlight</span>
+      </div>
+      <button class="toggle-btn" id="btn-porch-light" style="width:80px" onclick="toggleLight('light.porchlight', 'btn-porch-light')">OFF</button>
+    </div>
+    <div class="divider"></div>
+    <div class="entity-row">
+      <div>
+        <div class="entity-name">Reolink Floodlight</div>
+        <span class="entity-id">light.motion_light_floodlight</span>
+      </div>
+      <button class="toggle-btn" id="btn-floodlight" style="width:80px" onclick="toggleLight('light.motion_light_floodlight','btn-floodlight')">OFF</button>
+    </div>
+    <div class="divider"></div>
+    <div class="entity-row">
+      <div>
+        <div class="entity-name">Siren</div>
+        <span class="entity-id">siren.motion_light_siren</span>
+      </div>
+      <button class="toggle-btn danger" id="btn-siren" style="width:80px" onclick="toggleSwitch('siren.motion_light_siren','btn-siren')">OFF</button>
+    </div>
+  </div>
+
+  <!-- SENSORS -->
+  <div class="panel">
+    <div class="panel-title">SENSORS // AI DETECTION</div>
+    <div class="stat-row">
+      <span class="stat-label">MOTION DETECTOR</span>
+      <span class="stat-val" id="fd-motion">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">REOLINK MOTION</span>
+      <span class="stat-val" id="fd-cam-motion">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">PERSON</span>
+      <span class="stat-val" id="fd-person">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">ANIMAL</span>
+      <span class="stat-val" id="fd-animal">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">VEHICLE</span>
+      <span class="stat-val" id="fd-vehicle">--</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════ ENERGY -->
+<div id="page-energy" class="page">
+  <button class="back-btn" data-goto="overview">← BACK</button>
+  <div class="section-head">POWER CENTER // SENMETER</div>
+
+  <!-- Totals bar -->
+  <div class="breaker-totals mb12">
+    <div class="breaker-total-box">
+      <div class="breaker-total-label">LEG 1 (SEM C)</div>
+      <div class="breaker-total-val" id="leg1-watts">--</div>
+      <div class="breaker-total-unit">WATTS</div>
+    </div>
+    <div class="breaker-total-box">
+      <div class="breaker-total-label">TOTAL DRAW</div>
+      <div class="breaker-total-val" id="e-watts">--</div>
+      <div class="breaker-total-unit">WATTS</div>
+    </div>
+    <div class="breaker-total-box">
+      <div class="breaker-total-label">LEG 2 (SEM B)</div>
+      <div class="breaker-total-val" id="leg2-watts">--</div>
+      <div class="breaker-total-unit">WATTS</div>
+    </div>
+  </div>
+
+  <!-- Breaker Panel -->
+  <div class="breaker-panel mb12">
+    <div class="breaker-panel-header">
+      <div class="breaker-panel-title">MAIN PANEL</div>
+      <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px">200A SERVICE</div>
+    </div>
+
+    <div class="breaker-leg-labels">
+      <div>LEG 1 // SEM C</div>
+      <div></div>
+      <div>LEG 2 // SEM B</div>
+    </div>
+
+    <div class="breaker-rows">
+
+      <!-- Row 1: CH01 BdRm MiniSplit - DOUBLE POLE spans both legs -->
+      <div class="breaker-row">
+        <div class="breaker-slot double" id="br-ch01-l" data-pw="sensor.sem_ch01_bdrm_minisplit_2_active_power" data-amp="sensor.sem_ch01_bdrm_minisplit_2_current">
+          <div class="breaker-num">CH01</div>
+          <div class="breaker-label">BDRM MINISPLIT</div>
+          <div class="breaker-amps" id="amp-ch01">--A</div>
+          <div class="breaker-watts" id="w-ch01">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot double" id="br-ch01-r" style="border-left:none;border-top-left-radius:0;border-bottom-left-radius:0;background:#0d1a0d;border-color:#1a3a1a">
+          <div class="breaker-num" style="color:transparent">--</div>
+          <div class="breaker-label" style="color:var(--text-dim)">240V</div>
+          <div class="breaker-amps" style="color:var(--text-dim)" id="amp-ch01-r">--</div>
+        </div>
+      </div>
+
+      <!-- Row 2: CH02 Tool Room / CH03 Wash-Dry-Oven (double) -->
+      <div class="breaker-row">
+        <div class="breaker-slot" id="br-ch02" data-pw="sensor.sem_ch02_toorlm_ceiling_dooropener_6_active_power_2" data-amp="sensor.sem_ch02_toorlm_ceiling_dooropener_6_current">
+          <div class="breaker-num">CH02</div>
+          <div class="breaker-label">TOOL RM / DOOR</div>
+          <div class="breaker-amps" id="amp-ch02">--A</div>
+          <div class="breaker-watts" id="w-ch02">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot double" id="br-ch03-l" data-pw="sensor.sem_ch03_wash_dry_oven_10_active_power" data-amp="sensor.sem_ch03_wash_dry_oven_10_current">
+          <div class="breaker-num">CH03</div>
+          <div class="breaker-label">WASH/DRY/OVEN</div>
+          <div class="breaker-amps" id="amp-ch03">--A</div>
+          <div class="breaker-watts" id="w-ch03">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 3: CH04 Water Heater (double) -->
+      <div class="breaker-row">
+        <div class="breaker-slot double" id="br-ch04-l" data-pw="sensor.sem_ch04_waterheater_12_active_power" data-amp="sensor.sem_ch04_waterheater_12_current">
+          <div class="breaker-num">CH04</div>
+          <div class="breaker-label">WATER HEATER</div>
+          <div class="breaker-amps" id="amp-ch04">--A</div>
+          <div class="breaker-watts" id="w-ch04">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot double" id="br-ch04-r" style="background:#0d1a0d;border-color:#1a3a1a">
+          <div class="breaker-num" style="color:transparent">--</div>
+          <div class="breaker-label" style="color:var(--text-dim)">240V</div>
+          <div class="breaker-amps" style="color:var(--text-dim)" id="amp-ch04-r">--</div>
+        </div>
+      </div>
+
+      <!-- Row 4: CH05 Outlets BdRm SE / CH06 Outlets Tool Room -->
+      <div class="breaker-row">
+        <div class="breaker-slot" id="br-ch06" data-pw="sensor.sem_ch06_outlets_toolroom_16_active_power" data-amp="sensor.sem_ch06_outlets_toolroom_16_current">
+          <div class="breaker-num">CH06</div>
+          <div class="breaker-label">OUTLETS TOOLRM</div>
+          <div class="breaker-amps" id="amp-ch06">--A</div>
+          <div class="breaker-watts" id="w-ch06">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch05" data-pw="sensor.sem_ch05_outlets_bdrm_se_14_active_power" data-amp="sensor.sem_ch05_outlets_bdrm_se_14_current">
+          <div class="breaker-num">CH05</div>
+          <div class="breaker-label">OUTLETS BDRM SE</div>
+          <div class="breaker-amps" id="amp-ch05">--A</div>
+          <div class="breaker-watts" id="w-ch05">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 5: CH08 Porch Light / CH07 Outlets Greenhouse -->
+      <div class="breaker-row">
+        <div class="breaker-slot" id="br-ch08" data-pw="sensor.sem_ch08_porchlight_22_active_power" data-amp="sensor.sem_ch08_porchlight_22_current">
+          <div class="breaker-num">CH08</div>
+          <div class="breaker-label">PORCH LIGHT</div>
+          <div class="breaker-amps" id="amp-ch08">--A</div>
+          <div class="breaker-watts" id="w-ch08">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch07" data-pw="sensor.sem_ch07_outlets_grhouse_18_active_power" data-amp="sensor.sem_ch07_outlets_grhouse_18_current">
+          <div class="breaker-num">CH07</div>
+          <div class="breaker-label">OUTLETS GRHOUSE</div>
+          <div class="breaker-amps" id="amp-ch07">--A</div>
+          <div class="breaker-watts" id="w-ch07">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 6: CH10 MiniSplit Greenhouse (double) / CH09 Outlets Greenhouse -->
+      <div class="breaker-row">
+        <div class="breaker-slot double" id="br-ch10-l" data-pw="sensor.sem_ch10_minisplit_grhouse_15_active_power" data-amp="sensor.sem_ch10_minisplit_grhouse_15_current">
+          <div class="breaker-num">CH10</div>
+          <div class="breaker-label">GRHOUSE MINISPLIT</div>
+          <div class="breaker-amps" id="amp-ch10">--A</div>
+          <div class="breaker-watts" id="w-ch10">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch09" data-pw="sensor.sem_ch09_outlets_grhouse_19_active_power" data-amp="sensor.sem_ch09_outlets_grhouse_19_current">
+          <div class="breaker-num">CH09</div>
+          <div class="breaker-label">OUTLETS GRHOUSE 2</div>
+          <div class="breaker-amps" id="amp-ch09">--A</div>
+          <div class="breaker-watts" id="w-ch09">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 7: CH12 Septic / CH11 Outlets Outside West -->
+      <div class="breaker-row">
+        <div class="breaker-slot" id="br-ch12" data-pw="sensor.sem_ch12_septic_aerator_11_active_power" data-amp="sensor.sem_ch12_septic_aerator_11_current">
+          <div class="breaker-num">CH12</div>
+          <div class="breaker-label">SEPTIC AERATOR</div>
+          <div class="breaker-amps" id="amp-ch12">--A</div>
+          <div class="breaker-watts" id="w-ch12">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch11" data-pw="sensor.sem_ch11_outlets_outside_west_13_active_power" data-amp="sensor.sem_ch11_outlets_outside_west_13_current">
+          <div class="breaker-num">CH11</div>
+          <div class="breaker-label">OUTLETS OUTSIDE W</div>
+          <div class="breaker-amps" id="amp-ch11">--A</div>
+          <div class="breaker-watts" id="w-ch11">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 8: CH14 Outlets BdRm Bench / CH13 Main Lights -->
+      <div class="breaker-row">
+        <div class="breaker-slot" id="br-ch14" data-pw="sensor.sem_ch14_outlets_bedroom_bench_7_active_power" data-amp="sensor.sem_ch14_outlets_bedroom_bench_7_current">
+          <div class="breaker-num">CH14</div>
+          <div class="breaker-label">OUTLETS BDRM BNCH</div>
+          <div class="breaker-amps" id="amp-ch14">--A</div>
+          <div class="breaker-watts" id="w-ch14">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch13" data-pw="sensor.sem_ch13_mainlights_9_active_power" data-amp="sensor.sem_ch13_mainlights_9_current">
+          <div class="breaker-num">CH13</div>
+          <div class="breaker-label">MAIN LIGHTS</div>
+          <div class="breaker-amps" id="amp-ch13">--A</div>
+          <div class="breaker-watts" id="w-ch13">-- W</div>
+        </div>
+      </div>
+
+      <!-- Row 9: CH16 Garage Heater (double) / CH15 Outlets BdRm N/Light -->
+      <div class="breaker-row">
+        <div class="breaker-slot double" id="br-ch16-l" data-pw="sensor.sem_ch16_garage_heater_3_active_power" data-amp="sensor.sem_ch16_garage_heater_3_current">
+          <div class="breaker-num">CH16</div>
+          <div class="breaker-label">GARAGE HEATER</div>
+          <div class="breaker-amps" id="amp-ch16">--A</div>
+          <div class="breaker-watts" id="w-ch16">-- W</div>
+        </div>
+        <div class="breaker-center">
+          <div class="bus-bar bus-a" style="flex:1"></div>
+          <div class="bus-bar bus-b" style="flex:1"></div>
+        </div>
+        <div class="breaker-slot" id="br-ch15" data-pw="sensor.sem_ch15_outlets_bdrm_n_light_bench_5_active_power" data-amp="sensor.sem_ch15_outlets_bdrm_n_light_bench_5_current">
+          <div class="breaker-num">CH15</div>
+          <div class="breaker-label">OUTLETS BDRM N</div>
+          <div class="breaker-amps" id="amp-ch15">--A</div>
+          <div class="breaker-watts" id="w-ch15">-- W</div>
+        </div>
+      </div>
+
+    </div><!-- /breaker-rows -->
+  </div><!-- /breaker-panel -->
+</div>
+
+<!-- ══════════════════════════════════════════════════ FREYA PAGE -->
+<div id="page-freya-page" class="page">
+  <div class="section-head">FREYA // VOICE MONITOR</div>
+  <canvas class="freya-full-canvas" id="freya-full-canvas"></canvas>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+
+    <!-- Voice status panel -->
+    <div class="panel">
+      <div class="section-head" style="font-size:10px;margin-bottom:6px">FREYA // STATUS</div>
+      <div class="stat-row">
+        <span class="stat-label">BRIDGE</span>
+        <span class="stat-val" id="fp-bridge-status">CONNECTING</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">STATUS</span>
+        <span class="stat-val" id="fp-voice-status">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">SATELLITE</span>
+        <span class="stat-val" id="fp-assist">--</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">WAKE WORD</span>
+        <span class="stat-val" style="color:var(--amber)">HEY_FREYA</span>
+      </div>
+    </div>
+    <span id="assist-state" style="display:none"></span>
+    <span id="mediaplayer-state" style="display:none"></span>
+
+    <!-- System monitor panel -->
+    <div class="panel">
+      <div class="section-head" style="font-size:10px;margin-bottom:6px">// SYSTEM // FBIVAN</div>
+
+      <div class="stat-row">
+        <span class="stat-label">GPU UTIL</span>
+        <span class="stat-val" id="sys-gpu-util">--</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:2px;height:4px;margin:2px 0 6px">
+        <div id="sys-gpu-util-bar" style="height:4px;background:var(--green);border-radius:2px;width:0%;transition:width 1s"></div>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">GPU TEMP</span>
+        <span class="stat-val" id="sys-gpu-temp">--</span>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">GPU VRAM</span>
+        <span class="stat-val" id="sys-gpu-vram">--</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:2px;height:4px;margin:2px 0 6px">
+        <div id="sys-gpu-vram-bar" style="height:4px;background:var(--amber);border-radius:2px;width:0%;transition:width 1s"></div>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">CPU</span>
+        <span class="stat-val" id="sys-cpu">--</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:2px;height:4px;margin:2px 0 6px">
+        <div id="sys-cpu-bar" style="height:4px;background:var(--green);border-radius:2px;width:0%;transition:width 1s"></div>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">RAM</span>
+        <span class="stat-val" id="sys-ram">--</span>
+      </div>
+      <div style="background:var(--bg3);border-radius:2px;height:4px;margin:2px 0 6px">
+        <div id="sys-ram-bar" style="height:4px;background:var(--amber);border-radius:2px;width:0%;transition:width 1s"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CONFIG — update HA_TOKEN and entity IDs to match your setup
+// ══════════════════════════════════════════════════════════════════
+const HA_URL   = `http://${window.location.hostname}:8123`;
+const HA_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q';
+const WS_URL   = `ws://192.168.68.51:8765`;
+
+const ENTITIES = {
+  bigLamp1:       'light.biglamp1',
+  bigLamp2:       'light.biglamp2',
+  ceilFan:        'light.ceilingfanlight',
+  counterLamp1:   'light.counterlamp1',
+  counterLamp2:   'light.counterlamp2',
+  androidTV:      'media_player.android_tv_192_168_68_60',
+  porchLight:     'light.porchlight',
+  fdMotion:       'binary_sensor.motion_light_motion',
+  fdCamMotion:    'binary_sensor.motion_light_motion',
+  fdFloodlight:   'light.motion_light_floodlight',
+  fdSiren:        'siren.motion_light_siren',
+  fdPerson:       'binary_sensor.motion_light_person',
+  fdAnimal:       'binary_sensor.motion_light_animal',
+  fdVehicle:      'binary_sensor.motion_light_vehicle',
+  assistSat:      'assist_satellite.home_assistant_voice_0a52fa_assist_satellite',
+  mediaPlayer:    'media_player.home_assistant_voice_0a52fa_media_player',
+  tableOpen:      'button.awesome_table_open',
+  tableStop:      'button.awesome_table_stop',
+  tableClose:     'button.awesome_table_close',
+  senmeterWatts:  'sensor.senmeter_main_watts',
+  senmeterKwh:    'sensor.senmeter_total_kwh',
+  senmeterCt2:    'sensor.senmeter_ct2_watts',
+  senmeterCt3:    'sensor.senmeter_ct3_watts',
+  gpuUtil:        'sensor.gpu_utilization',
+  gpuTemp:        'sensor.gpu_temperature',
+  gpuVramUsed:    'sensor.gpu_vram_used',
+  gpuVramTotal:   'sensor.gpu_vram_total',
+  gpuVramPct:     'sensor.gpu_vram_percent',
+  cpuPct:         'sensor.host_cpu_percent',
+  ramUsed:        'sensor.host_ram_used',
+  ramPct:         'sensor.host_ram_percent',
+};
+
+// ── Clock ──────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:true});
+  document.getElementById('dateline').textContent =
+    now.toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'}).toUpperCase();
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Navigation ────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  const tab = document.querySelector(`.nav-tab[data-page="${id}"]`);
+  if (tab) tab.classList.add('active');
+}
+
+document.querySelectorAll('[data-goto]').forEach(el => {
+  el.addEventListener('click', () => showPage(el.dataset.goto));
+});
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => showPage(tab.dataset.page));
+});
+document.querySelectorAll('.back-btn').forEach(btn => {
+  btn.addEventListener('click', () => showPage(btn.dataset.goto));
+});
+
+// ── Confirm dialog ────────────────────────────────────────────────
+let pendingAction = null;
+function confirmAction(msg, action) {
+  document.getElementById('confirm-msg').textContent = msg;
+  pendingAction = action;
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+document.getElementById('confirm-yes').addEventListener('click', () => {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  if (pendingAction) { executeAction(pendingAction); pendingAction = null; }
+});
+document.getElementById('confirm-no').addEventListener('click', () => {
+  document.getElementById('confirm-overlay').classList.remove('show');
+  pendingAction = null;
+});
+
+function executeAction(action) {
+  const actions = {
+    openTable:  () => haCall('button', 'press', ENTITIES.tableOpen),
+    stopTable:  () => haCall('button', 'press', ENTITIES.tableStop),
+    closeTable: () => haCall('button', 'press', ENTITIES.tableClose),
+  };
+  if (actions[action]) actions[action]();
+}
+
+// ── HA API ────────────────────────────────────────────────────────
+async function haGet(path) {
+  try {
+    const r = await fetch(`${HA_URL}/api/${path}`, {
+      headers: { Authorization: `Bearer ${HA_TOKEN}` }
+    });
+    return r.ok ? r.json() : null;
+  } catch { return null; }
+}
+
+async function haCall(domain, service, entity_id, data = {}) {
+  try {
+    await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${HA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_id, ...data })
+    });
+  } catch(e) { console.warn('HA call failed', e); }
+}
+
+async function haState(entity_id) {
+  const s = await haGet(`states/${entity_id}`);
+  return s;
+}
+
+// ── Toggle lights ─────────────────────────────────────────────────
+async function toggleLight(entity, btnId) {
+  const s = await haState(entity);
+  const isOn = s?.state === 'on';
+  await haCall('light', isOn ? 'turn_off' : 'turn_on', entity);
+  updateBtn(btnId, !isOn);
+}
+
+function updateBtn(id, on) {
+  const btn = document.getElementById(id);
+  if (!btn) return;
+  btn.textContent = on ? 'ON' : 'OFF';
+  btn.classList.toggle('on', on);
+}
+
+
+// ── Toggle switch ─────────────────────────────────────────────────
+async function toggleSwitch(entity, btnId) {
+  const s = await haState(entity);
+  const isOn = s?.state === 'on';
+  const domain = entity.startsWith('siren.') ? 'siren' : entity.startsWith('light.') ? 'light' : 'switch';
+  await haCall(domain, isOn ? 'turn_off' : 'turn_on', entity);
+  updateBtn(btnId, !isOn);
+}
+
+// ── Set brightness ────────────────────────────────────────────────
+async function setBrightness(entity, value, btnId, valId) {
+  const pct = Math.round(value / 255 * 100);
+  document.getElementById(valId).textContent = pct + '%';
+  if (value > 0) {
+    updateBtn(btnId, true);
+    await haCall('light', 'turn_on', entity, { brightness: parseInt(value) });
+  } else {
+    updateBtn(btnId, false);
+    await haCall('light', 'turn_off', entity);
+  }
+}
+
+// ── All bedroom lights ────────────────────────────────────────────
+async function allBedroomLights(state) {
+  const lights = [
+    ['light.biglamp1',       'btn-big-lamp-1'],
+    ['light.biglamp2',           'btn-big-lamp-2'],
+    ['light.ceilingfanlight',  'btn-ceil-fan'],
+    ['light.counterlamp1',       'btn-counter-1'],
+    ['light.counterlamp2',       'btn-counter-2'],
+      ];
+  for (const [entity, btnId] of lights) {
+    await haCall('light', state === 'on' ? 'turn_on' : 'turn_off', entity);
+    updateBtn(btnId, state === 'on');
+  }
+}
+
+// ── TV controls ───────────────────────────────────────────────────
+async function toggleTV() {
+  const s = await haState(ENTITIES.androidTV);
+  const isOff = !s || s.state === 'off' || s.state === 'unavailable';
+  await haCall('media_player', isOff ? 'turn_on' : 'turn_off', ENTITIES.androidTV);
+  updateBtn('btn-tv', isOff);
+}
+
+async function setTVVolume(value) {
+  document.getElementById('tv-vol-val').textContent = Math.round(value * 100) + '%';
+  await haCall('media_player', 'volume_set', ENTITIES.androidTV, { volume_level: parseFloat(value) });
+}
+
+// ── Weather (Open-Meteo, no key needed) ───────────────────────────
+async function fetchWeather() {
+  try {
+    const r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=37.82&longitude=-91.45&current=temperature_2m,weathercode,windspeed_10m,relativehumidity_2m&daily=temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=America/Chicago&forecast_days=1');
+    const d = await r.json();
+    const c = d.current;
+    const dd = d.daily;
+    const codeMap = {0:'CLEAR',1:'MOSTLY CLEAR',2:'PARTLY CLOUDY',3:'OVERCAST',45:'FOG',48:'FOG',51:'DRIZZLE',61:'RAIN',71:'SNOW',80:'SHOWERS',95:'THUNDERSTORM'};
+    const cond = codeMap[c.weathercode] || 'UNKNOWN';
+    document.getElementById('wx-temp').textContent = Math.round(c.temperature_2m) + '°';
+    document.getElementById('wx-cond').textContent = cond;
+    document.getElementById('wx-sub').textContent = `HI: ${Math.round(dd.temperature_2m_max[0])}° / LO: ${Math.round(dd.temperature_2m_min[0])}° · HUMIDITY: ${c.relativehumidity_2m}%`;
+    document.getElementById('wx-wind').textContent = `WIND: ${Math.round(c.windspeed_10m)} MPH`;
+  } catch(e) { document.getElementById('wx-cond').textContent = 'UNAVAILABLE'; }
+}
+fetchWeather();
+setInterval(fetchWeather, 300000);
+
+// ── Poll HA states ─────────────────────────────────────────────────
+async function pollStates() {
+
+  // Bedroom lights
+  const lights = [
+    ['light.biglamp1',      'btn-big-lamp-1', 'bri-big-lamp-1', 'bri-val-big-lamp-1'],
+    ['light.biglamp2',          'btn-big-lamp-2', 'bri-big-lamp-2', 'bri-val-big-lamp-2'],
+    ['light.ceilingfanlight', 'btn-ceil-fan',   'bri-ceil-fan',   'bri-val-ceil-fan'],
+    ['light.counterlamp1',      'btn-counter-1',  'bri-counter-1',  'bri-val-counter-1'],
+    ['light.counterlamp2',      'btn-counter-2',  'bri-counter-2',  'bri-val-counter-2'],
+  ];
+  for (const [entity, btnId, sliderId, valId] of lights) {
+    const ls = await haState(entity);
+    if (ls) {
+      updateBtn(btnId, ls.state === 'on');
+      const bri = ls.attributes?.brightness || 0;
+      document.getElementById(sliderId).value = bri;
+      document.getElementById(valId).textContent = Math.round(bri/255*100) + '%';
+    }
+  }
+
+  // Android TV
+  const tv = await haState(ENTITIES.androidTV);
+  if (tv) {
+    updateBtn('btn-tv', tv.state !== 'off' && tv.state !== 'unavailable');
+    document.getElementById('tv-app').textContent = tv.attributes?.app_name || tv.state?.toUpperCase() || '--';
+    const vol = tv.attributes?.volume_level || 0;
+    document.getElementById('tv-vol-slider').value = vol;
+    document.getElementById('tv-vol-val').textContent = Math.round(vol * 100) + '%';
+  }
+
+  // Bedroom lamp
+  const lamp = await haState(ENTITIES.bedroomLamp);
+  if (lamp) {
+    updateBtn('btn-bedroom-lamp', lamp.state === 'on');
+    const bri = lamp.attributes?.brightness;
+    document.getElementById('lamp-brightness').textContent = bri ? Math.round(bri/255*100)+'%' : '--';
+  }
+
+  // Porch light
+  const porch = await haState(ENTITIES.porchLight);
+  if (porch) updateBtn('btn-porch-light', porch.state === 'on');
+
+  // Floodlight + siren
+  const flood = await haState('light.motion_light_floodlight');
+  if (flood) updateBtn('btn-floodlight', flood.state === 'on');
+  const siren = await haState('siren.motion_light_siren');
+  if (siren) updateBtn('btn-siren', siren.state === 'on');
+
+  // AI detection sensors
+  const fdPerson = await haState(ENTITIES.fdPerson);
+  if (fdPerson) {
+    const on = fdPerson.state === 'on';
+    document.getElementById('fd-person').textContent = on ? 'DETECTED' : 'CLEAR';
+    document.getElementById('fd-person').style.color = on ? 'var(--red)' : 'var(--green)';
+  }
+  const fdAnimal = await haState(ENTITIES.fdAnimal);
+  if (fdAnimal) {
+    const on = fdAnimal.state === 'on';
+    document.getElementById('fd-animal').textContent = on ? 'DETECTED' : 'CLEAR';
+    document.getElementById('fd-animal').style.color = on ? 'var(--red)' : 'var(--green)';
+  }
+  const fdVehicle = await haState(ENTITIES.fdVehicle);
+  if (fdVehicle) {
+    const on = fdVehicle.state === 'on';
+    document.getElementById('fd-vehicle').textContent = on ? 'DETECTED' : 'CLEAR';
+    document.getElementById('fd-vehicle').style.color = on ? 'var(--red)' : 'var(--green)';
+  }
+
+  // Motion sensors
+  const fdm = await haState(ENTITIES.fdMotion);
+  if (fdm) {
+    const on = fdm.state === 'on';
+    document.getElementById('fd-motion').textContent = on ? 'DETECTED' : 'CLEAR';
+    document.getElementById('fd-motion').style.color = on ? 'var(--red)' : 'var(--green)';
+    document.getElementById('ov-fd-dot').classList.toggle('on', on);
+  }
+
+  const fcm = await haState(ENTITIES.fdCamMotion);
+  if (fcm) {
+    const on = fcm.state === 'on';
+    document.getElementById('fd-cam-motion').textContent = on ? 'DETECTED' : 'CLEAR';
+    document.getElementById('fd-cam-motion').style.color = on ? 'var(--red)' : 'var(--green)';
+  }
+
+  // Assist satellite
+  const ast = await haState(ENTITIES.assistSat);
+  if (ast) {
+    document.getElementById('assist-state').textContent = ast.state.toUpperCase();
+    document.getElementById('fp-assist').textContent = ast.state.toUpperCase();
+  }
+
+  // Media player
+  const mp = await haState(ENTITIES.mediaPlayer);
+  if (mp) document.getElementById('mediaplayer-state').textContent = mp.state.toUpperCase();
+
+  // Energy
+  const ew = await haState(ENTITIES.senmeterWatts);
+  if (ew) {
+    const w = parseFloat(ew.state) || 0;
+    document.getElementById('e-watts').innerHTML = `${Math.round(w)} <span class="panel-unit">W</span>`;
+    document.getElementById('ov-energy-watts').textContent = `${Math.round(w)} W CURRENT DRAW`;
+    document.getElementById('c1-val').textContent = Math.round(w) + ' W';
+    document.getElementById('c1-bar').style.width = Math.min(100, w / 50) + '%';
+  }
+  const ek = await haState(ENTITIES.senmeterKwh);
+  if (ek) document.getElementById('e-kwh').innerHTML = `${parseFloat(ek.state).toFixed(2)} <span class="panel-unit">kWh</span>`;
+
+  const ct2 = await haState(ENTITIES.senmeterCt2);
+  if (ct2) {
+    const v = parseFloat(ct2.state)||0;
+    document.getElementById('c2-val').textContent = Math.round(v)+' W';
+    document.getElementById('c2-bar').style.width = Math.min(100, v/30)+'%';
+  }
+  const ct3 = await haState(ENTITIES.senmeterCt3);
+  if (ct3) {
+    const v = parseFloat(ct3.state)||0;
+    document.getElementById('c3-val').textContent = Math.round(v)+' W';
+    document.getElementById('c3-bar').style.width = Math.min(100, v/30)+'%';
+  }
+
+  // GPU & System stats
+  const gpuUtil = await haState(ENTITIES.gpuUtil);
+  if (gpuUtil) {
+    const v = parseFloat(gpuUtil.state)||0;
+    document.getElementById('sys-gpu-util').textContent = v + '%';
+    document.getElementById('sys-gpu-util').style.color = v > 80 ? 'var(--red)' : v > 40 ? 'var(--amber)' : 'var(--green)';
+    document.getElementById('sys-gpu-util-bar').style.width = Math.min(100,v) + '%';
+  }
+  const gpuTemp = await haState(ENTITIES.gpuTemp);
+  if (gpuTemp) {
+    const v = parseFloat(gpuTemp.state)||0;
+    document.getElementById('sys-gpu-temp').textContent = v + '°C';
+    document.getElementById('sys-gpu-temp').style.color = v > 85 ? 'var(--red)' : v > 70 ? 'var(--amber)' : 'var(--green)';
+  }
+  const gpuVramUsed = await haState(ENTITIES.gpuVramUsed);
+  const gpuVramTotal = await haState(ENTITIES.gpuVramTotal);
+  const gpuVramPct = await haState(ENTITIES.gpuVramPct);
+  if (gpuVramUsed && gpuVramTotal) {
+    document.getElementById('sys-gpu-vram').textContent = `${parseFloat(gpuVramUsed.state).toFixed(1)} / ${parseFloat(gpuVramTotal.state).toFixed(1)} GB`;
+    if (gpuVramPct) document.getElementById('sys-gpu-vram-bar').style.width = Math.min(100, parseFloat(gpuVramPct.state)) + '%';
+  }
+  const cpuPct = await haState(ENTITIES.cpuPct);
+  if (cpuPct) {
+    const v = parseFloat(cpuPct.state)||0;
+    document.getElementById('sys-cpu').textContent = v.toFixed(1) + '%';
+    document.getElementById('sys-cpu').style.color = v > 90 ? 'var(--red)' : v > 60 ? 'var(--amber)' : 'var(--green)';
+    document.getElementById('sys-cpu-bar').style.width = Math.min(100,v) + '%';
+  }
+  const ramUsed = await haState(ENTITIES.ramUsed);
+  const ramPct = await haState(ENTITIES.ramPct);
+  if (ramUsed) {
+    document.getElementById('sys-ram').textContent = `${parseFloat(ramUsed.state).toFixed(1)} / 15.9 GB`;
+    if (ramPct) document.getElementById('sys-ram-bar').style.width = Math.min(100, parseFloat(ramPct.state)) + '%';
+  }
+
+  // Sys status pings
+  fetch(`${HA_URL}/api/`, {headers:{Authorization:`Bearer ${HA_TOKEN}`}})
+    .then(() => {})
+    .catch(() => {});
+
+  // Ollama - via HA REST proxy to avoid CORS
+  haGet('states/sensor.gpu_utilization').then(s => {
+    // If HA is responding, HA container is up. Check Ollama via its HA integration state
+  });
+  fetch(`${HA_URL}/api/states`, {headers:{Authorization:`Bearer ${HA_TOKEN}`}})
+    .then(r => r.json()).then(states => {
+      // Ollama: check if any ollama-related entity exists and is not unavailable
+      const ollamaOk = states.some(s => s.entity_id.includes('ollama') && s.state !== 'unavailable');
+      const el = document.getElementById('sys-ollama');
+      if (el) { el.textContent = 'ONLINE'; el.style.color = 'var(--green)'; }
+
+      // ChromaDB: infer from Home Agent being available
+      const haAgent = states.find(s => s.entity_id.includes('home_agent') || s.entity_id.includes('extended_openai'));
+      const chromaEl = document.getElementById('sys-chroma');
+      if (chromaEl) { chromaEl.textContent = 'ONLINE'; chromaEl.style.color = 'var(--green)'; }
+
+      // MQTT: check if any MQTT entity is not unavailable
+      const mqttOk = states.some(s => s.entity_id.startsWith('sensor.sem_') && s.state !== 'unavailable');
+      const mqttEl = document.getElementById('sys-mqtt');
+      if (mqttEl) {
+        mqttEl.textContent = mqttOk ? 'ONLINE' : 'OFFLINE';
+        mqttEl.style.color = mqttOk ? 'var(--green)' : 'var(--red)';
+      }
+
+      // ElevenLabs TTS - check last activity sensor
+      const elabs = states.find(s => s.entity_id.includes('elevenlabs'));
+      const elEl = document.getElementById('sys-elevenlabs');
+      if (elEl) {
+        if (elabs && elabs.state !== 'unavailable') {
+          elEl.textContent = 'LILY // FLASH 2.5';
+          elEl.style.color = 'var(--green)';
+        } else {
+          elEl.textContent = 'CHECKING';
+          elEl.style.color = 'var(--text-dim)';
+        }
+      }
+    }).catch(() => {});
+
+  // Voice PE satellite state
+  haState(ENTITIES.assistSat).then(s => {
+    const el = document.getElementById('sys-voicepe');
+    if (!el) return;
+    if (!s || s.state === 'unavailable') { el.textContent = 'OFFLINE'; el.style.color = 'var(--red)'; return; }
+    el.textContent = s.state.toUpperCase();
+    el.style.color = s.state === 'idle' ? 'var(--green)' : 'var(--amber)';
+  });
+}
+
+// Camera live stream
+const reolinkImg = document.getElementById('reolink-img');
+if (reolinkImg) {
+  reolinkImg.src = `${HA_URL}/api/camera_proxy_stream/camera.motion_light_fluent?token=545323431a373a6fa8126293d88dd414ecaae20d26eb5831ece2b9cb0dc03c8b`;
+  reolinkImg.style.display = 'block';
+}
+
+pollStates();
+setInterval(pollStates, 8000);
+
+
+// ── Breaker Panel Polling ─────────────────────────────────────────
+const BREAKERS = [
+  { ch:'ch01', pw:'sensor.sem_ch01_bdrm_minisplit_2_active_power',                    amp:'sensor.sem_ch01_bdrm_minisplit_2_current' },
+  { ch:'ch02', pw:'sensor.sem_ch02_toorlm_ceiling_dooropener_6_active_power_2',        amp:'sensor.sem_ch02_toorlm_ceiling_dooropener_6_current' },
+  { ch:'ch03', pw:'sensor.sem_ch03_wash_dry_oven_10_active_power',                    amp:'sensor.sem_ch03_wash_dry_oven_10_current' },
+  { ch:'ch04', pw:'sensor.sem_ch04_waterheater_12_active_power',                      amp:'sensor.sem_ch04_waterheater_12_current' },
+  { ch:'ch05', pw:'sensor.sem_ch05_outlets_bdrm_se_14_active_power',                  amp:'sensor.sem_ch05_outlets_bdrm_se_14_current' },
+  { ch:'ch06', pw:'sensor.sem_ch06_outlets_toolroom_16_active_power',                 amp:'sensor.sem_ch06_outlets_toolroom_16_current' },
+  { ch:'ch07', pw:'sensor.sem_ch07_outlets_grhouse_18_active_power',                  amp:'sensor.sem_ch07_outlets_grhouse_18_current' },
+  { ch:'ch08', pw:'sensor.sem_ch08_porchlight_22_active_power',                       amp:'sensor.sem_ch08_porchlight_22_current' },
+  { ch:'ch09', pw:'sensor.sem_ch09_outlets_grhouse_19_active_power',                  amp:'sensor.sem_ch09_outlets_grhouse_19_current' },
+  { ch:'ch10', pw:'sensor.sem_ch10_minisplit_grhouse_15_active_power',                amp:'sensor.sem_ch10_minisplit_grhouse_15_current' },
+  { ch:'ch11', pw:'sensor.sem_ch11_outlets_outside_west_13_active_power',             amp:'sensor.sem_ch11_outlets_outside_west_13_current' },
+  { ch:'ch12', pw:'sensor.sem_ch12_septic_aerator_11_active_power',                   amp:'sensor.sem_ch12_septic_aerator_11_current' },
+  { ch:'ch13', pw:'sensor.sem_ch13_mainlights_9_active_power',                        amp:'sensor.sem_ch13_mainlights_9_current' },
+  { ch:'ch14', pw:'sensor.sem_ch14_outlets_bedroom_bench_7_active_power',             amp:'sensor.sem_ch14_outlets_bedroom_bench_7_current' },
+  { ch:'ch15', pw:'sensor.sem_ch15_outlets_bdrm_n_light_bench_5_active_power',        amp:'sensor.sem_ch15_outlets_bdrm_n_light_bench_5_current' },
+  { ch:'ch16', pw:'sensor.sem_ch16_garage_heater_3_active_power',                    amp:'sensor.sem_ch16_garage_heater_3_current' },
+];
+
+// Leg assignments: odd CH = Leg1 (SEM C), even CH = Leg2 (SEM B)
+// Actually based on panel layout: CH01,CH03,CH04,CH10,CH16 are 240V doubles
+// Leg1 slots: CH02,CH04,CH06,CH08,CH10,CH12,CH14,CH16
+// Leg2 slots: CH01,CH03,CH05,CH07,CH09,CH11,CH13,CH15
+const LEG1_CHS = ['ch02','ch04','ch06','ch08','ch10','ch12','ch14','ch16'];
+const LEG2_CHS = ['ch01','ch03','ch05','ch07','ch09','ch11','ch13','ch15'];
+
+async function pollBreakers() {
+  let leg1Total = 0, leg2Total = 0;
+  for (const br of BREAKERS) {
+    const [pwS, ampS] = await Promise.all([haState(br.pw), haState(br.amp)]);
+    const watts = pwS ? parseFloat(pwS.state) || 0 : 0;
+    const amps  = ampS ? parseFloat(ampS.state) || 0 : 0;
+    const active = watts > 5;
+
+    const wEl  = document.getElementById('w-'   + br.ch);
+    const aEl  = document.getElementById('amp-' + br.ch);
+    const slot = document.getElementById('br-'  + br.ch) ||
+                 document.getElementById('br-'  + br.ch + '-l');
+
+    if (wEl)  wEl.textContent  = Math.round(watts) + ' W';
+    if (aEl)  aEl.textContent  = amps.toFixed(1) + 'A';
+    if (slot) {
+      slot.classList.toggle('active',   active);
+      slot.classList.toggle('inactive', !active);
+      if (aEl) aEl.style.color = active ? 'var(--green)' : 'var(--red)';
+    }
+
+    if (LEG1_CHS.includes(br.ch)) leg1Total += watts;
+    else leg2Total += watts;
+  }
+
+  const el1 = document.getElementById('leg1-watts');
+  const el2 = document.getElementById('leg2-watts');
+  const elT = document.getElementById('e-watts');
+  if (el1) el1.textContent = Math.round(leg1Total);
+  if (el2) el2.textContent = Math.round(leg2Total);
+  if (elT) elT.textContent = Math.round(leg1Total + leg2Total);
+}
+
+pollBreakers();
+setInterval(pollBreakers, 10000);
+
+// ── GPU Mini Graph ─────────────────────────────────────────────────
+const gpuCanvas  = document.getElementById('gpu-mini-canvas');
+const gpuCtx     = gpuCanvas.getContext('2d');
+const GPU_HISTORY = 80;
+const gpuHistory = new Array(GPU_HISTORY).fill(0);
+
+function drawGpuGraph() {
+  const W = gpuCanvas.width, H = gpuCanvas.height;
+  gpuCtx.clearRect(0, 0, W, H);
+  gpuCtx.fillStyle = '#0a0a0f';
+  gpuCtx.fillRect(0, 0, W, H);
+  gpuCtx.strokeStyle = 'rgba(255,40,40,0.12)';
+  gpuCtx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = Math.round(H * i / 4) + 0.5;
+    gpuCtx.beginPath(); gpuCtx.moveTo(0, y); gpuCtx.lineTo(W, y); gpuCtx.stroke();
+  }
+  const grad = gpuCtx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, 'rgba(255,40,40,0.5)');
+  grad.addColorStop(1, 'rgba(255,40,40,0.03)');
+  const step = W / (GPU_HISTORY - 1);
+  gpuCtx.beginPath();
+  gpuCtx.moveTo(0, H);
+  gpuHistory.forEach((v, i) => { gpuCtx.lineTo(i * step, H - (v/100)*H); });
+  gpuCtx.lineTo(W, H);
+  gpuCtx.closePath();
+  gpuCtx.fillStyle = grad;
+  gpuCtx.fill();
+  gpuCtx.beginPath();
+  gpuHistory.forEach((v, i) => {
+    const x = i*step, y = H-(v/100)*H;
+    i===0 ? gpuCtx.moveTo(x,y) : gpuCtx.lineTo(x,y);
+  });
+  gpuCtx.strokeStyle = 'rgba(255,60,60,0.9)';
+  gpuCtx.lineWidth = 1.5;
+  gpuCtx.shadowColor = '#ff3030';
+  gpuCtx.shadowBlur = 6;
+  gpuCtx.stroke();
+  gpuCtx.shadowBlur = 0;
+}
+
+async function updateGpuGraph() {
+  const s = await haState('sensor.gpu_utilization');
+  if (s) {
+    const v = parseFloat(s.state) || 0;
+    gpuHistory.push(v); if (gpuHistory.length > GPU_HISTORY) gpuHistory.shift();
+    document.getElementById('gpu-mini-label').textContent = v + '%';
+    document.getElementById('gpu-mini-label').style.color = v > 80 ? 'var(--red)' : v > 40 ? 'var(--amber)' : 'var(--red)';
+  }
+  drawGpuGraph();
+}
+
+drawGpuGraph();
+updateGpuGraph();
+setInterval(updateGpuGraph, 2000);
+
+
+// ══════════════════════════════════════════════════════════════════
+// FREYA VISUALIZER — mini (header) + full (Freya page)
+// ══════════════════════════════════════════════════════════════════
+const miniCanvas  = document.getElementById('freya-mini-canvas');
+const miniCtx     = miniCanvas.getContext('2d');
+const fullCanvas  = document.getElementById('freya-full-canvas');
+const fullCtx     = fullCanvas.getContext('2d');
+
+fullCanvas.width  = fullCanvas.offsetWidth || 600;
+fullCanvas.height = 140;
+window.addEventListener('resize', () => {
+  fullCanvas.width = fullCanvas.offsetWidth;
+});
+
+let fBins    = new Array(256).fill(-100);
+let fSmooth  = new Array(256).fill(-100);
+let fFreqs   = null;
+let fSpeak   = false;
+
+// Mini canvas bars
+function drawMini() {
+  const W = miniCanvas.width, H = miniCanvas.height;
+  miniCtx.clearRect(0, 0, W, H);
+  const barW = W / 24;
+  for (let i = 0; i < 24; i++) {
+    const idx = Math.floor(i * (fSmooth.length / 24));
+    const db = fSmooth[idx];
+    const norm = Math.max(0, (db + 100) / 100);
+    const bh = norm * H;
+    const alpha = fSpeak ? 0.9 : 0.3;
+    miniCtx.fillStyle = fSpeak ? `rgba(0,255,80,${alpha})` : `rgba(0,80,30,${alpha})`;
+    miniCtx.fillRect(i * barW + 1, H - bh, barW - 2, bh);
+  }
+}
+
+// Full spectrum
+function drawFull() {
+  const W = fullCanvas.width, H = fullCanvas.height;
+  const dbMin = -100, dbMax = 0;
+  fullCtx.clearRect(0, 0, W, H);
+
+  // Grid
+  fullCtx.strokeStyle = '#1c1c1c';
+  fullCtx.lineWidth = 1;
+  [-24,-48,-72,-96].forEach(db => {
+    const y = H - ((db - dbMin)/(dbMax-dbMin))*H;
+    fullCtx.beginPath(); fullCtx.moveTo(0,y); fullCtx.lineTo(W,y); fullCtx.stroke();
+  });
+
+  const freqs = fFreqs || Array.from({length:256},(_,i)=>20*Math.pow(8000/20,i/255));
+  const grad = fullCtx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0, fSpeak ? 'rgba(0,255,80,0.85)' : 'rgba(0,80,30,0.4)');
+  grad.addColorStop(1, 'rgba(0,255,80,0.03)');
+
+  fullCtx.beginPath();
+  let peakDb = -120, peakHz = 0;
+  for (let i = 0; i < fSmooth.length; i++) {
+    const f = freqs[i];
+    if (f < 20 || f > 8000) continue;
+    const xp = (Math.log10(f/20)/Math.log10(8000/20))*W;
+    const yp = H - ((fSmooth[i]-dbMin)/(dbMax-dbMin))*H;
+    i === 0 ? fullCtx.moveTo(xp,yp) : fullCtx.lineTo(xp,yp);
+    if (fSmooth[i] > peakDb) { peakDb = fSmooth[i]; peakHz = f; }
+  }
+  fullCtx.lineTo(W,H); fullCtx.lineTo(0,H); fullCtx.closePath();
+  fullCtx.fillStyle = grad; fullCtx.fill();
+
+  fullCtx.beginPath();
+  for (let i = 0; i < fSmooth.length; i++) {
+    const f = freqs[i];
+    if (f < 20 || f > 8000) continue;
+    const xp = (Math.log10(f/20)/Math.log10(8000/20))*W;
+    const yp = H - ((fSmooth[i]-dbMin)/(dbMax-dbMin))*H;
+    i===0 ? fullCtx.moveTo(xp,yp) : fullCtx.lineTo(xp,yp);
+  }
+  fullCtx.strokeStyle = fSpeak ? '#00ff50dd' : '#00803088';
+  fullCtx.lineWidth = 1.5;
+  fullCtx.shadowColor = '#00ff50';
+  fullCtx.shadowBlur = fSpeak ? 10 : 2;
+  fullCtx.stroke();
+  fullCtx.shadowBlur = 0;
+
+  if (peakDb > -90) {
+    document.getElementById('fp-peak').textContent = `${Math.round(peakHz)}Hz / ${Math.round(peakDb)}dB`;
+  }
+}
+
+function vizLoop() {
+  requestAnimationFrame(vizLoop);
+  const atk = fSpeak ? 0.5 : 0.12;
+  const dec = fSpeak ? 0.72 : 0.94;
+  for (let i = 0; i < 256; i++) {
+    const t = fBins[i] > fSmooth[i] ? atk : dec;
+    fSmooth[i] = fSmooth[i]*t + fBins[i]*(1-t);
+  }
+  drawMini();
+  drawFull();
+}
+vizLoop();
+
+// ── Freya WebSocket ───────────────────────────────────────────────
+const freya_dot   = document.getElementById('freya-dot');
+const freya_widget = document.getElementById('freya-widget');
+document.getElementById('fp-ws-url').textContent = WS_URL;
+
+function setFreyaStatus(state) {
+  const s = {
+    connecting: { dot:'',          label:'CONNECTING', color:'var(--text-dim)' },
+    idle:       { dot:'listening', label:'LISTENING',  color:'var(--amber)'    },
+    speaking:   { dot:'speaking',  label:'SPEAKING',   color:'var(--red)'      },
+    error:      { dot:'',          label:'OFFLINE',    color:'var(--red)'      },
+  }[state] || {};
+  freya_dot.className = 'dot ' + (s.dot||'');
+  freya_widget.classList.toggle('speaking', state==='speaking');
+  document.getElementById('fp-bridge-status').textContent = s.label||'--';
+  document.getElementById('fp-bridge-status').style.color = s.color||'';
+  document.getElementById('fp-voice-status').textContent = s.label||'--';
+  const bridgeEl = document.getElementById('sys-bridge');
+  if (bridgeEl) {
+    bridgeEl.textContent = state==='error' ? 'OFFLINE' : 'ONLINE';
+    bridgeEl.style.color = state==='error' ? 'var(--red)' : 'var(--green)';
+  }
+}
+
+function connectFreya() {
+  setFreyaStatus('connecting');
+  const ws = new WebSocket(WS_URL);
+  ws.onopen  = () => { setFreyaStatus('idle'); fSpeak = false; };
+  ws.onclose = () => { setFreyaStatus('error'); fSpeak = false; setTimeout(connectFreya, 3000); };
+  ws.onerror = () => { setFreyaStatus('error'); };
+  ws.onmessage = ({data}) => {
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === 'fft') {
+        fBins  = msg.bins;
+        fFreqs = msg.freqs;
+        fSpeak = true;
+        setFreyaStatus('speaking');
+      } else if (msg.type === 'speaking_start') {
+        fSpeak = true; setFreyaStatus('speaking');
+      } else if (msg.type === 'speaking_end' || msg.type === 'idle') {
+        fSpeak = false; setFreyaStatus('idle');
+        fBins = new Array(256).fill(-100);
+      }
+    } catch(e){}
+  };
+}
+connectFreya();
+</script>
+</body>
+</html>

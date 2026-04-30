@@ -1,0 +1,122 @@
+# =============================================================================
+# Solar Grid Calculation Package
+# File: config/packages/solar_grid_calc.yaml
+#
+# Purpose: Calculates grid import/export power and energy from solar production
+#          and house consumption, enabling full HA Energy dashboard integration.
+#
+# Sources:
+#   Solar Production : sensor.inv4_sn_3010558210_pv_power (W)
+#   House Consumption: sensor.sem_b_active_power + sensor.sem_c_active_power (W)
+#
+# Math:
+#   Grid Export Power = Solar - House  (when Solar > House, else 0)
+#   Grid Import Power = House - Solar  (when House > Solar, else 0)
+#   House Solar Power = min(Solar, House) — portion of solar used directly
+#
+# Outputs for Energy Dashboard:
+#   sensor.grid_export_energy  → "Return to grid" (kWh)
+#   sensor.grid_import_energy  → "Grid consumption" (kWh)
+#   sensor.house_solar_energy  → optional self-consumption tracking
+# =============================================================================
+
+template:
+  - sensor:
+      # ------------------------------------------------------------------
+      # Live power: how many watts are being exported to the grid right now
+      # ------------------------------------------------------------------
+      - name: "Grid Export Power"
+        unique_id: grid_export_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set solar = states('sensor.inv4_sn_3010558210_pv_power') | float(0) %}
+          {% set house = states('sensor.sem_b_active_power') | float(0)
+                       + states('sensor.sem_c_active_power') | float(0) %}
+          {{ [solar - house, 0] | max | round(1) }}
+
+      # ------------------------------------------------------------------
+      # Live power: how many watts are being pulled from the grid right now
+      # ------------------------------------------------------------------
+      - name: "Grid Import Power"
+        unique_id: grid_import_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set solar = states('sensor.inv4_sn_3010558210_pv_power') | float(0) %}
+          {% set house = states('sensor.sem_b_active_power') | float(0)
+                       + states('sensor.sem_c_active_power') | float(0) %}
+          {{ [house - solar, 0] | max | round(1) }}
+
+      # ------------------------------------------------------------------
+      # Live power: solar being consumed directly by the house
+      # ------------------------------------------------------------------
+      - name: "House Solar Power"
+        unique_id: house_solar_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set solar = states('sensor.inv4_sn_3010558210_pv_power') | float(0) %}
+          {% set house = states('sensor.sem_b_active_power') | float(0)
+                       + states('sensor.sem_c_active_power') | float(0) %}
+          {{ [solar, house] | min | round(1) }}
+
+      # ------------------------------------------------------------------
+      # Total house consumption (combined SEM legs) — convenience sensor
+      # ------------------------------------------------------------------
+      - name: "House Consumption Power"
+        unique_id: house_consumption_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set b = states('sensor.sem_b_active_power') | float(0) %}
+          {% set c = states('sensor.sem_c_active_power') | float(0) %}
+          {{ (b + c) | round(1) }}
+
+# =============================================================================
+# Riemann Sum Integrations
+# Converts live power (W) → accumulated energy (kWh) for Energy dashboard
+# method: left — simple and reliable for home energy use
+# round: 3 decimal places (Wh precision)
+# =============================================================================
+
+sensor:
+  - platform: integration
+    name: "Grid Export Energy"
+    unique_id: grid_export_energy
+    source: sensor.grid_export_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3
+
+  - platform: integration
+    name: "Grid Import Energy"
+    unique_id: grid_import_energy
+    source: sensor.grid_import_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3
+
+  - platform: integration
+    name: "House Solar Energy"
+    unique_id: house_solar_energy
+    source: sensor.house_solar_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3
+
+  - platform: integration
+    name: "House Consumption Energy"
+    unique_id: house_consumption_energy
+    source: sensor.house_consumption_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 3

@@ -1,0 +1,806 @@
+# SEM Command Center - MQTT Sensor Configuration Package (COMPLETE)
+# Device: SEM Energy Monitor 98A316F09CFA
+# Topic: SEMMETER/98A316F09CFA/HA
+#
+# Division factors:
+# - Voltage  [0]: divide by 10    (1250 → 125.0 V)
+# - Current  [1]: divide by 100   (2996 → 29.96 A)
+# - Power    [2]: divide by 100   (11627 → 116.27 W)
+# - EnergyIn [3]: divide by 1000  (for kWh - total_increasing)
+# - EnergyOut[4]: divide by 1000  (for kWh - total_increasing)
+#
+# Updated: March 12, 2026
+# Changes: Added EnergyIn sensor for all 16 channels (CH01-CH16)
+
+---
+mqtt:
+  sensor:
+
+    # ====================================================================
+    # MAIN FEEDS — Channel B (sense[17]) and Channel C (sense[18])
+    # ====================================================================
+
+    # --- SEM C (Leg A — Odd Breakers) ---
+    - name: "SEM C - Current"
+      unique_id: sem_c_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[18][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM C - Active Power"
+      unique_id: sem_c_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[18][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM C - Voltage"
+      unique_id: sem_c_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[18][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM C - EnergyIn"
+      unique_id: sem_c_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[18][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:transmission-tower
+
+    - name: "SEM C - EnergyOut"
+      unique_id: sem_c_energyout
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[18][4] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:transmission-tower-export
+
+    # --- SEM B (Leg B — Even Breakers) ---
+    - name: "SEM B - Current"
+      unique_id: sem_b_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[17][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM B - Active Power"
+      unique_id: sem_b_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[17][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM B - Voltage"
+      unique_id: sem_b_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[17][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:transmission-tower
+
+    - name: "SEM B - EnergyIn"
+      unique_id: sem_b_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[17][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:transmission-tower
+
+    - name: "SEM B - EnergyOut"
+      unique_id: sem_b_energyout
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[17][4] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:transmission-tower-export
+
+    # ====================================================================
+    # CHANNEL 01 - BdRm MiniSplit (2) - sense[0]
+    # ====================================================================
+    - name: "SEM CH01 BdRm MiniSplit (2) - Current"
+      unique_id: sem_ch01_bdrm_minisplit_2_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[0][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH01 BdRm MiniSplit (2) - Active Power"
+      unique_id: sem_ch01_bdrm_minisplit_2_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[0][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH01 BdRm MiniSplit (2) - Voltage"
+      unique_id: sem_ch01_bdrm_minisplit_2_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[0][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH01 BdRm MiniSplit (2) - EnergyIn"
+      unique_id: sem_ch01_bdrm_minisplit_2_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[0][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:air-conditioner
+
+    # ====================================================================
+    # CHANNEL 02 - TooRlm Ceiling/DoorOpener (6) - sense[1]
+    # ====================================================================
+    - name: "SEM CH02 TooRlm Ceiling DoorOpener (6) - Current"
+      unique_id: sem_ch02_toolrlm_ceiling_dooropener_6_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[1][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:garage
+
+    - name: "SEM CH02 TooRlm Ceiling DoorOpener (6) - Active Power"
+      unique_id: sem_ch02_toolrlm_ceiling_dooropener_6_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[1][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:garage
+
+    - name: "SEM CH02 TooRlm Ceiling DoorOpener (6) - Voltage"
+      unique_id: sem_ch02_toolrlm_ceiling_dooropener_6_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[1][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:garage
+
+    - name: "SEM CH02 TooRlm Ceiling DoorOpener (6) - EnergyIn"
+      unique_id: sem_ch02_toolrlm_ceiling_dooropener_6_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[1][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:garage
+
+    # ====================================================================
+    # CHANNEL 03 - Wash/Dry/Oven (10) - sense[2]
+    # ====================================================================
+    - name: "SEM CH03 Wash Dry Oven (10) - Current"
+      unique_id: sem_ch03_wash_dry_oven_10_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[2][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:washing-machine
+
+    - name: "SEM CH03 Wash Dry Oven (10) - Active Power"
+      unique_id: sem_ch03_wash_dry_oven_10_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[2][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:washing-machine
+
+    - name: "SEM CH03 Wash Dry Oven (10) - Voltage"
+      unique_id: sem_ch03_wash_dry_oven_10_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[2][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:washing-machine
+
+    - name: "SEM CH03 Wash Dry Oven (10) - EnergyIn"
+      unique_id: sem_ch03_wash_dry_oven_10_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[2][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:washing-machine
+
+    # ====================================================================
+    # CHANNEL 04 - WaterHeater (12) - sense[3]
+    # ====================================================================
+    - name: "SEM CH04 WaterHeater (12) - Current"
+      unique_id: sem_ch04_waterheater_12_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[3][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:water-heater
+
+    - name: "SEM CH04 WaterHeater (12) - Active Power"
+      unique_id: sem_ch04_waterheater_12_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[3][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:water-heater
+
+    - name: "SEM CH04 WaterHeater (12) - Voltage"
+      unique_id: sem_ch04_waterheater_12_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[3][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:water-heater
+
+    - name: "SEM CH04 WaterHeater (12) - EnergyIn"
+      unique_id: sem_ch04_waterheater_12_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[3][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:water-heater
+
+    # ====================================================================
+    # CHANNEL 05 - Outlets/BdRm S&E (14) - sense[4]
+    # ====================================================================
+    - name: "SEM CH05 Outlets BdRm SE (14) - Current"
+      unique_id: sem_ch05_outlets_bdrm_se_14_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[4][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH05 Outlets BdRm SE (14) - Active Power"
+      unique_id: sem_ch05_outlets_bdrm_se_14_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[4][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH05 Outlets BdRm SE (14) - Voltage"
+      unique_id: sem_ch05_outlets_bdrm_se_14_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[4][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH05 Outlets BdRm SE (14) - EnergyIn"
+      unique_id: sem_ch05_outlets_bdrm_se_14_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[4][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 06 - Outlets-ToolRoom (16) - sense[5]
+    # ====================================================================
+    - name: "SEM CH06 Outlets ToolRoom (16) - Current"
+      unique_id: sem_ch06_outlets_toolroom_16_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[5][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH06 Outlets ToolRoom (16) - Active Power"
+      unique_id: sem_ch06_outlets_toolroom_16_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[5][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH06 Outlets ToolRoom (16) - Voltage"
+      unique_id: sem_ch06_outlets_toolroom_16_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[5][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH06 Outlets ToolRoom (16) - EnergyIn"
+      unique_id: sem_ch06_outlets_toolroom_16_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[5][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 07 - Outlets-GrHouse (18) - sense[6]
+    # ====================================================================
+    - name: "SEM CH07 Outlets GrHouse (18) - Current"
+      unique_id: sem_ch07_outlets_grhouse_18_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[6][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH07 Outlets GrHouse (18) - Active Power"
+      unique_id: sem_ch07_outlets_grhouse_18_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[6][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH07 Outlets GrHouse (18) - Voltage"
+      unique_id: sem_ch07_outlets_grhouse_18_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[6][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH07 Outlets GrHouse (18) - EnergyIn"
+      unique_id: sem_ch07_outlets_grhouse_18_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[6][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 08 - PorchLight (22) - sense[7]
+    # ====================================================================
+    - name: "SEM CH08 PorchLight (22) - Current"
+      unique_id: sem_ch08_porchlight_22_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[7][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:lightbulb
+
+    - name: "SEM CH08 PorchLight (22) - Active Power"
+      unique_id: sem_ch08_porchlight_22_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[7][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:lightbulb
+
+    - name: "SEM CH08 PorchLight (22) - Voltage"
+      unique_id: sem_ch08_porchlight_22_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[7][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:lightbulb
+
+    - name: "SEM CH08 PorchLight (22) - EnergyIn"
+      unique_id: sem_ch08_porchlight_22_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[7][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:lightbulb
+
+    # ====================================================================
+    # CHANNEL 09 - Outlets-GrHouse (19) - sense[8]
+    # ====================================================================
+    - name: "SEM CH09 Outlets GrHouse (19) - Current"
+      unique_id: sem_ch09_outlets_grhouse_19_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[8][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH09 Outlets GrHouse (19) - Active Power"
+      unique_id: sem_ch09_outlets_grhouse_19_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[8][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH09 Outlets GrHouse (19) - Voltage"
+      unique_id: sem_ch09_outlets_grhouse_19_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[8][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH09 Outlets GrHouse (19) - EnergyIn"
+      unique_id: sem_ch09_outlets_grhouse_19_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[8][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 10 - MiniSplit-GrHouse (15) - sense[9]
+    # ====================================================================
+    - name: "SEM CH10 MiniSplit GrHouse (15) - Current"
+      unique_id: sem_ch10_minisplit_grhouse_15_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[9][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH10 MiniSplit GrHouse (15) - Active Power"
+      unique_id: sem_ch10_minisplit_grhouse_15_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[9][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH10 MiniSplit GrHouse (15) - Voltage"
+      unique_id: sem_ch10_minisplit_grhouse_15_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[9][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:air-conditioner
+
+    - name: "SEM CH10 MiniSplit GrHouse (15) - EnergyIn"
+      unique_id: sem_ch10_minisplit_grhouse_15_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[9][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:air-conditioner
+
+    # ====================================================================
+    # CHANNEL 11 - Outlets-Outside West (13) - sense[10]
+    # ====================================================================
+    - name: "SEM CH11 Outlets Outside West (13) - Current"
+      unique_id: sem_ch11_outlets_outside_west_13_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[10][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH11 Outlets Outside West (13) - Active Power"
+      unique_id: sem_ch11_outlets_outside_west_13_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[10][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH11 Outlets Outside West (13) - Voltage"
+      unique_id: sem_ch11_outlets_outside_west_13_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[10][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH11 Outlets Outside West (13) - EnergyIn"
+      unique_id: sem_ch11_outlets_outside_west_13_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[10][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 12 - Septic Aerator (11) - sense[11]
+    # ====================================================================
+    - name: "SEM CH12 Septic Aerator (11) - Current"
+      unique_id: sem_ch12_septic_aerator_11_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[11][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:pump
+
+    - name: "SEM CH12 Septic Aerator (11) - Active Power"
+      unique_id: sem_ch12_septic_aerator_11_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[11][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:pump
+
+    - name: "SEM CH12 Septic Aerator (11) - Voltage"
+      unique_id: sem_ch12_septic_aerator_11_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[11][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:pump
+
+    - name: "SEM CH12 Septic Aerator (11) - EnergyIn"
+      unique_id: sem_ch12_septic_aerator_11_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[11][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:pump
+
+    # ====================================================================
+    # CHANNEL 13 - MainLights (9) - sense[12]
+    # ====================================================================
+    - name: "SEM CH13 MainLights (9) - Current"
+      unique_id: sem_ch13_mainlights_9_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[12][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:lightbulb-multiple
+
+    - name: "SEM CH13 MainLights (9) - Active Power"
+      unique_id: sem_ch13_mainlights_9_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[12][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:lightbulb-multiple
+
+    - name: "SEM CH13 MainLights (9) - Voltage"
+      unique_id: sem_ch13_mainlights_9_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[12][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:lightbulb-multiple
+
+    - name: "SEM CH13 MainLights (9) - EnergyIn"
+      unique_id: sem_ch13_mainlights_9_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[12][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:lightbulb-multiple
+
+    # ====================================================================
+    # CHANNEL 14 - Outlets-Bedroom/Bench (7) - sense[13]
+    # ====================================================================
+    - name: "SEM CH14 Outlets Bedroom Bench (7) - Current"
+      unique_id: sem_ch14_outlets_bedroom_bench_7_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[13][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH14 Outlets Bedroom Bench (7) - Active Power"
+      unique_id: sem_ch14_outlets_bedroom_bench_7_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[13][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH14 Outlets Bedroom Bench (7) - Voltage"
+      unique_id: sem_ch14_outlets_bedroom_bench_7_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[13][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH14 Outlets Bedroom Bench (7) - EnergyIn"
+      unique_id: sem_ch14_outlets_bedroom_bench_7_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[13][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 15 - Outlets-BdRm N-Light/Bench (5) - sense[14]
+    # ====================================================================
+    - name: "SEM CH15 Outlets BdRm N Light Bench (5) - Current"
+      unique_id: sem_ch15_outlets_bdrm_n_light_bench_5_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[14][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH15 Outlets BdRm N Light Bench (5) - Active Power"
+      unique_id: sem_ch15_outlets_bdrm_n_light_bench_5_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[14][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH15 Outlets BdRm N Light Bench (5) - Voltage"
+      unique_id: sem_ch15_outlets_bdrm_n_light_bench_5_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[14][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:power-socket-us
+
+    - name: "SEM CH15 Outlets BdRm N Light Bench (5) - EnergyIn"
+      unique_id: sem_ch15_outlets_bdrm_n_light_bench_5_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[14][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:power-socket-us
+
+    # ====================================================================
+    # CHANNEL 16 - Garage Heater (3) - sense[15]
+    # ====================================================================
+    - name: "SEM CH16 Garage Heater (3) - Current"
+      unique_id: sem_ch16_garage_heater_3_current
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[15][1] | float / 100 | round(2) }}"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      icon: mdi:radiator
+
+    - name: "SEM CH16 Garage Heater (3) - Active Power"
+      unique_id: sem_ch16_garage_heater_3_active_power
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[15][2] | float / 100 | round(0) }}"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      icon: mdi:radiator
+
+    - name: "SEM CH16 Garage Heater (3) - Voltage"
+      unique_id: sem_ch16_garage_heater_3_voltage
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[15][0] | float / 10 | round(1) }}"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      icon: mdi:radiator
+
+    - name: "SEM CH16 Garage Heater (3) - EnergyIn"
+      unique_id: sem_ch16_garage_heater_3_energyin
+      state_topic: "SEMMETER/98A316F09CFA/HA"
+      value_template: "{{ value_json.sense[15][3] | float / 1000 | round(3) }}"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      icon: mdi:radiator
+
+# ====================================================================
+# INPUT BOOLEAN HELPERS - Channel Visibility Toggles
+# ====================================================================
+input_boolean:
+  show_sem_ch01:
+    name: "Show SEM CH01"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch02:
+    name: "Show SEM CH02"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch03:
+    name: "Show SEM CH03"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch04:
+    name: "Show SEM CH04"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch05:
+    name: "Show SEM CH05"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch06:
+    name: "Show SEM CH06"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch07:
+    name: "Show SEM CH07"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch08:
+    name: "Show SEM CH08"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch09:
+    name: "Show SEM CH09"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch10:
+    name: "Show SEM CH10"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch11:
+    name: "Show SEM CH11"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch12:
+    name: "Show SEM CH12"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch13:
+    name: "Show SEM CH13"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch14:
+    name: "Show SEM CH14"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch15:
+    name: "Show SEM CH15"
+    icon: mdi:toggle-switch
+    initial: false
+  show_sem_ch16:
+    name: "Show SEM CH16"
+    icon: mdi:toggle-switch
+    initial: false

@@ -1,0 +1,26 @@
+substitutions:
+  name: home-assistant-voice-0a52fa
+  friendly_name: Voice PE
+  # Try passing custom model as substitution
+  custom_wake_word_model: http://192.168.0.40:8123/local/wake_words/hey_freya.json
+
+packages:
+  voice_pe:
+    url: https://github.com/esphome/home-assistant-voice-pe
+    ref: 25.12.4
+    files:
+      - home-assistant-voice.yaml
+
+
+esphome:
+  name: ${name}
+  name_add_mac_suffix: false
+  friendly_name: ${friendly_name}
+
+api:
+  encryption:
+    key: sZ571O6h7frW29lWoa37ylQDSxwMpnLVYffo7o2Vm+U=
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password

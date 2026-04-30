@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Freya Voice Monitor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #070b0f;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Share Tech Mono', monospace;
+    color: #a0c8d8;
+    overflow: hidden;
+  }
+
+  .container {
+    width: 95vw;
+    max-width: 1000px;
+    background: linear-gradient(180deg, #0a1520 0%, #060c14 100%);
+    border: 1px solid #1a3040;
+    border-radius: 4px;
+    padding: 18px 24px 14px;
+    box-shadow: 0 0 60px #00aaff18, inset 0 1px 0 #1e4060;
+    position: relative;
+  }
+
+  .container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.07) 2px, rgba(0,0,0,0.07) 4px);
+    pointer-events: none;
+    border-radius: 4px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: #4af0c8;
+    text-shadow: 0 0 10px #4af0c880;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+    letter-spacing: 2px;
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #2a5050;
+    transition: all 0.3s;
+  }
+  .dot.connected { background: #4af0c8; box-shadow: 0 0 8px #4af0c8; animation: pulse 2s ease-in-out infinite; }
+  .dot.speaking  { background: #ff6090; box-shadow: 0 0 10px #ff6090; animation: pulse-fast 0.35s ease-in-out infinite; }
+  .dot.error     { background: #ff4040; box-shadow: 0 0 8px #ff4040; }
+
+  @keyframes pulse      { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  @keyframes pulse-fast { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  .ws-label { font-size: 10px; color: #2a5060; letter-spacing: 1px; }
+
+  .canvas-wrap { position: relative; width: 100%; }
+
+  .y-axis {
+    position: absolute; left: 0; top: 0; height: 100%;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding-right: 6px; font-size: 10px; color: #1e4050;
+    pointer-events: none; width: 34px; text-align: right;
+  }
+
+  canvas { width: 100%; height: 200px; display: block; margin-left: 34px; }
+
+  .x-labels {
+    display: flex; justify-content: space-between;
+    padding: 5px 0 0 34px; font-size: 10px; color: #1e4050;
+  }
+
+  .x-title {
+    text-align: center; font-size: 10px;
+    color: #1e5060; letter-spacing: 3px; margin-top: 3px;
+  }
+
+  .footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; font-size: 10px; color: #1e4050; letter-spacing: 1px;
+  }
+
+  .peak { color: #ff609099; }
+
+  select {
+    background: #0a1520; border: 1px solid #1a4060;
+    color: #4af0c8; font-family: 'Share Tech Mono', monospace;
+    font-size: 10px; padding: 3px 8px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="title">FREYA // VOICE MONITOR</div>
+    <div class="status-row">
+      <div class="status">
+        <div class="dot" id="dot"></div>
+        <span id="statusText">CONNECTING</span>
+      </div>
+      <select id="colorPicker">
+        <option value="teal">TEAL</option>
+        <option value="magenta">MAGENTA</option>
+        <option value="amber">AMBER</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <div class="y-axis" id="yAxis"></div>
+    <canvas id="cv"></canvas>
+  </div>
+
+  <div class="x-labels" id="xLabels"></div>
+  <div class="x-title">FREQUENCY (Hz)</div>
+
+  <div class="footer">
+    <span id="peakInfo" class="peak">PEAK: —</span>
+    <span id="wsStatus" class="ws-label">ws://localhost:8765</span>
+  </div>
+</div>
+
+<script>
+// ── Canvas setup ──────────────────────────────────────────────────────────────
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  const wrap = canvas.parentElement;
+  canvas.width  = wrap.clientWidth - 34;
+  canvas.height = 200;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ── Y-axis labels ─────────────────────────────────────────────────────────────
+const dbTicks = [0, -12, -24, -36, -48, -60, -72, -84, -96];
+const yEl = document.getElementById('yAxis');
+dbTicks.forEach(v => { const d = document.createElement('div'); d.textContent = v; yEl.appendChild(d); });
+
+// ── X-axis labels ─────────────────────────────────────────────────────────────
+const freqTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 8000];
+const xEl = document.getElementById('xLabels');
+freqTicks.forEach(f => {
+  const d = document.createElement('div');
+  d.textContent = f >= 1000 ? (f/1000)+'k' : f;
+  xEl.appendChild(d);
+});
+
+// ── Colors ────────────────────────────────────────────────────────────────────
+const COLORS = {
+  teal:    { stroke: '#4af0c8cc', fill0: '#4af0c8aa', fill1: '#4af0c811', glow: '#4af0c8' },
+  magenta: { stroke: '#dd44aacc', fill0: '#dd44aaaa', fill1: '#dd44aa11', glow: '#dd44aa' },
+  amber:   { stroke: '#f0b840cc', fill0: '#f0b840aa', fill1: '#f0b84011', glow: '#f0b840' },
+};
+let color = COLORS.teal;
+document.getElementById('colorPicker').addEventListener('change', e => { color = COLORS[e.target.value]; });
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const DOT      = document.getElementById('dot');
+const STATUS   = document.getElementById('statusText');
+const PEAK_EL  = document.getElementById('peakInfo');
+const WS_LABEL = document.getElementById('wsStatus');
+
+let currentBins  = new Array(256).fill(-100);
+let smoothBins   = new Array(256).fill(-100);
+let currentFreqs = null;
+let speaking     = false;
+let animId;
+
+// ── Draw loop ─────────────────────────────────────────────────────────────────
+function draw() {
+  animId = requestAnimationFrame(draw);
+
+  // Smooth: fast attack when speaking, slow decay when idle
+  const attack = speaking ? 0.5 : 0.15;
+  const decay  = speaking ? 0.7 : 0.92;
+  for (let i = 0; i < 256; i++) {
+    const t = currentBins[i] > smoothBins[i] ? attack : decay;
+    smoothBins[i] = smoothBins[i] * t + currentBins[i] * (1 - t);
+  }
+
+  const W = canvas.width, H = canvas.height;
+  const dbMin = -100, dbMax = 0;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#0d2030';
+  ctx.lineWidth = 1;
+  dbTicks.forEach(db => {
+    const y = H - ((db - dbMin) / (dbMax - dbMin)) * H;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  });
+  freqTicks.forEach(f => {
+    const x = (Math.log10(f / 20) / Math.log10(8000 / 20)) * W;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  });
+
+  // Spectrum
+  const freqs = currentFreqs || Array.from({length: 256}, (_, i) => 20 * Math.pow(8000/20, i/255));
+
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, color.fill0);
+  grad.addColorStop(1, color.fill1);
+
+  ctx.beginPath();
+  let peakDb = -120, peakHz = 0;
+
+  for (let i = 0; i < smoothBins.length; i++) {
+    const f = freqs[i];
+    if (f < 20 || f > 8000) continue;
+    const xp = (Math.log10(f / 20) / Math.log10(8000 / 20)) * W;
+    const yp = H - ((smoothBins[i] - dbMin) / (dbMax - dbMin)) * H;
+    i === 0 ? ctx.moveTo(xp, yp) : ctx.lineTo(xp, yp);
+    if (smoothBins[i] > peakDb) { peakDb = smoothBins[i]; peakHz = f; }
+  }
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Stroke with glow
+  ctx.beginPath();
+  for (let i = 0; i < smoothBins.length; i++) {
+    const f = freqs[i];
+    if (f < 20 || f > 8000) continue;
+    const xp = (Math.log10(f / 20) / Math.log10(8000 / 20)) * W;
+    const yp = H - ((smoothBins[i] - dbMin) / (dbMax - dbMin)) * H;
+    i === 0 ? ctx.moveTo(xp, yp) : ctx.lineTo(xp, yp);
+  }
+  ctx.strokeStyle = color.stroke;
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = color.glow;
+  ctx.shadowBlur = speaking ? 12 : 4;
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+
+  // Peak dot
+  if (peakDb > -90) {
+    const px = (Math.log10(peakHz / 20) / Math.log10(8000 / 20)) * W;
+    const py = H - ((peakDb - dbMin) / (dbMax - dbMin)) * H;
+    ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff6090';
+    ctx.shadowColor = '#ff6090'; ctx.shadowBlur = 10;
+    ctx.fill(); ctx.shadowBlur = 0;
+    PEAK_EL.textContent = `PEAK: ${Math.round(peakHz)}Hz / ${Math.round(peakDb)}dB`;
+  }
+}
+draw();
+
+// ── WebSocket connection ───────────────────────────────────────────────────────
+// Auto-detect: if loaded from HA (/local/...), bridge is on same host port 8765
+const WS_URL = `ws://${window.location.hostname}:8765`;
+WS_LABEL.textContent = WS_URL;
+
+function setStatus(state) {
+  const states = {
+    connecting: { dot: '',          text: 'CONNECTING' },
+    idle:       { dot: 'connected', text: 'LISTENING'  },
+    speaking:   { dot: 'speaking',  text: 'SPEAKING'   },
+    error:      { dot: 'error',     text: 'DISCONNECTED'},
+  };
+  const s = states[state] || states.idle;
+  DOT.className = 'dot ' + s.dot;
+  STATUS.textContent = s.text;
+}
+
+function connect() {
+  setStatus('connecting');
+  const ws = new WebSocket(WS_URL);
+
+  ws.onopen  = () => { setStatus('idle'); speaking = false; };
+  ws.onclose = () => { setStatus('error'); speaking = false; setTimeout(connect, 3000); };
+  ws.onerror = () => { setStatus('error'); };
+
+  ws.onmessage = ({ data }) => {
+    try {
+      const msg = JSON.parse(data);
+      if (msg.type === 'fft') {
+        currentBins  = msg.bins;
+        currentFreqs = msg.freqs;
+        speaking = true;
+        setStatus('speaking');
+      } else if (msg.type === 'speaking_start') {
+        speaking = true;
+        setStatus('speaking');
+      } else if (msg.type === 'speaking_end' || msg.type === 'idle') {
+        speaking = false;
+        setStatus('idle');
+        currentBins = new Array(256).fill(-100);
+      }
+    } catch(e) {}
+  };
+}
+
+connect();
+</script>
+</body>
+</html>

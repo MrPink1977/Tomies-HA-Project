@@ -1,0 +1,41 @@
+substitutions:
+  name: home-assistant-voice-0a52fa
+  friendly_name: Voice PE
+
+packages:
+  voice_pe:
+    url: https://github.com/esphome/home-assistant-voice-pe
+    ref: 25.12.4
+    files:
+      - home-assistant-voice.yaml
+
+esphome:
+  name: home-assistant-voice-0a52fa
+  name_add_mac_suffix: false
+  friendly_name: Voice PE
+
+api:
+  encryption:
+    key: sZ571O6h7frW29lWoa37ylQDSxwMpnLVYffo7o2Vm+U=
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  manual_ip:
+    static_ip: 192.168.0.48
+    gateway: 192.168.0.1
+    subnet: 255.255.255.0
+    dns1: 8.8.8.8
+    dns2: 8.8.4.4
+
+# ============================================
+# CONVERSATION CONTINUITY CONFIGURATION
+# ============================================
+voice_assistant:
+  conversation_timeout: 600s
+  
+  on_tts_end:
+    - voice_assistant.start_continuous:
+  
+  on_error:
+    - voice_assistant.stop:
