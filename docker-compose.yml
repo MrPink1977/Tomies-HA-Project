@@ -61,7 +61,7 @@ services:
     networks:
       - ha_network
     depends_on:
-      - mosquitto  # If it uses MQTT
+      - mosquitto
 
   wyoming-piper:
     container_name: wyoming-piper
@@ -101,14 +101,14 @@ services:
     image: ollama/ollama:latest
     volumes:
       - ./ollama_data:/root/.ollama
-      - ./ollama-init.sh:/ollama-init.sh:ro  # Mount startup script
+      - ./ollama-init.sh:/ollama-init.sh:ro
     ports:
       - "11434:11434"
     restart: unless-stopped
     environment:
       - TZ=America/New_York
-      - OLLAMA_KEEP_ALIVE=-1  # Keep models loaded forever
-      - OLLAMA_MAX_LOADED_MODELS=2  # Allow 2 models in memory
+      - OLLAMA_KEEP_ALIVE=-1
+      - OLLAMA_MAX_LOADED_MODELS=2
     networks:
       - ha_network
     deploy:
@@ -136,7 +136,7 @@ services:
     environment:
       - IS_PERSISTENT=TRUE
       - ANONYMIZED_TELEMETRY=FALSE
-      - CHROMA_PERSIST_PATH=/chroma/chroma    # <-- explicitly declare the persist path
+      - CHROMA_PERSIST_PATH=/chroma/chroma
       - TZ=America/New_York
     restart: unless-stopped
     networks:
@@ -168,6 +168,75 @@ services:
       - ha_network
     depends_on:
       - mosquitto
+
+  # ── SearXNG ─────────────────────────────────────────────────
+  # Shared search backend for LDR (deep reports) and llm_intents (quick voice lookups)
+  # Host: http://localhost:8088  |  Docker-internal: http://searxng:8080
+  searxng:
+    image: searxng/searxng:latest
+    container_name: searxng
+    ports:
+      - "8088:8080"
+    volumes:
+      - ./searxng:/etc/searxng
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    restart: unless-stopped
+
+  # ── Local Deep Research ──────────────────────────────────────
+  # Iterative research engine: search → summarize → find gaps → re-search × N cycles
+  # Web UI: http://localhost:5000
+  local-deep-research:
+    image: localdeepresearch/local-deep-research:latest
+    container_name: local-deep-research
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./ldr_data:/data
+    environment:
+      - TZ=America/New_York
+      - LDR_DATA_DIR=/data
+      - LDR_LLM_PROVIDER=ollama
+      - LDR_LLM_OLLAMA_URL=http://ollama:11434
+      - LDR_LLM_MODEL=qwen3:8b
+      - LDR_SEARCH_ENGINE=searxng
+      - LDR_SEARCH_SEARXNG_URL=http://searxng:8080
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - ollama
+      - searxng
+
+  # ── Research Bridge ──────────────────────────────────────────
+  # Glue layer: HA fires it → authenticates to LDR → polls for completion
+  # → converts report to PDF → saves to /config/www/reports/ → calls HA webhook
+  # Host: http://localhost:8099
+  research-bridge:
+    build:
+      context: ./research-bridge
+    container_name: research-bridge
+    ports:
+      - "8099:8099"
+    volumes:
+      - ./config/www/reports:/app/reports
+    environment:
+      - TZ=America/New_York
+      - LDR_URL=http://local-deep-research:5000
+      - LDR_USERNAME=admin
+      - LDR_PASSWORD=freyaresearch2026
+      - HA_URL=http://homeassistant:8123
+      # Replace with a long-lived HA token (Settings → Profile → Long-Lived Access Tokens)
+      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
+      - HA_WEBHOOK_ID=research_report_done
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - local-deep-research
+      - homeassistant
 
 networks:
   ha_network:

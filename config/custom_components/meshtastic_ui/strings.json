@@ -1,5 +1,6 @@
 {
   "config": {
+    "flow_title": "{name} ({address})",
     "step": {
       "user": {
         "title": "Meshtastic UI",
@@ -25,14 +26,31 @@
       },
       "ble": {
         "title": "Bluetooth Connection",
-        "description": "Enter the BLE address of your Meshtastic radio.",
+        "description": "Select a discovered Meshtastic radio or enter a BLE address manually.",
+        "data": {
+          "ble_address": "BLE device"
+        }
+      },
+      "ble_manual": {
+        "title": "Bluetooth Connection",
+        "description": "No Meshtastic radios were discovered. Enter the BLE address manually.",
         "data": {
           "ble_address": "BLE address"
         }
+      },
+      "bluetooth_confirm": {
+        "title": "Set up Meshtastic radio",
+        "description": "A Meshtastic radio was discovered via Bluetooth:\n\n**{name}**\n`{address}`\n\nDo you want to set it up?"
+      },
+      "zeroconf_confirm": {
+        "title": "Set up Meshtastic radio",
+        "description": "A Meshtastic radio was discovered on the network:\n\n**{name}**\n`{host}:{port}`\n\nDo you want to set it up?"
       }
     },
     "error": {
-      "cannot_connect": "Unable to connect to the radio. Check the address and ensure the radio is powered on."
+      "cannot_connect": "Unable to connect to the radio. Check the address and ensure the radio is powered on.",
+      "ble_unreachable": "Home Assistant's Bluetooth stack can't reach that device. Ensure a Bluetooth adapter or proxy is in range.",
+      "not_meshtastic": "Connected, but that device doesn't expose the Meshtastic BLE service. Double-check the address."
     },
     "abort": {
       "already_configured": "Meshtastic UI is already configured."

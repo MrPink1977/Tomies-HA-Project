@@ -16,18 +16,22 @@ from typing import TYPE_CHECKING, Any, Callable, Sequence, cast
 import aiohttp
 import homeassistant.helpers.httpx_client
 import httpx
-
 from homeassistant.components import conversation as ha_conversation
 from homeassistant.components.homeassistant.exposed_entities import async_should_expose
 from homeassistant.const import EVENT_STATE_CHANGED
 from homeassistant.core import Event, HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_time_interval
 
+from homeassistant.helpers import (
+    area_registry as ar,
+    device_registry as dr,
+    entity_registry as er,
+)
+
 if TYPE_CHECKING:
     from chromadb.api import ClientAPI
     from chromadb.api.models.Collection import Collection
 
-from .helpers import render_template_value
 from .const import (
     CONF_EMBEDDING_KEEP_ALIVE,
     CONF_OPENAI_API_KEY,
@@ -53,7 +57,7 @@ from .const import (
     EMBEDDING_PROVIDER_OPENAI,
 )
 from .exceptions import ContextInjectionError
-from .helpers import retry_async
+from .helpers import render_template_value, retry_async
 
 # Conditional imports for ChromaDB
 try:
@@ -122,14 +126,14 @@ class VectorDBManager:
         self.embedding_base_url = config.get(
             CONF_VECTOR_DB_EMBEDDING_BASE_URL, DEFAULT_VECTOR_DB_EMBEDDING_BASE_URL
         )
-        self.openai_api_key = render_template_value(
-            hass, config.get(CONF_OPENAI_API_KEY, "")
-        )
+        self.openai_api_key = render_template_value(hass, config.get(CONF_OPENAI_API_KEY, ""))
 
         # State
         self._client: ClientAPI | None = None
         self._collection: Collection | None = None
         self._embedding_cache: OrderedDict[str, list[float]] = OrderedDict()
+        # Tracks entity_id → cache_key so we can evict stale entries on state change
+        self._entity_cache_keys: dict[str, str] = {}
         self._indexing_lock = asyncio.Lock()
         self._state_listener: Callable[[], None] | None = None
         self._maintenance_listener: Callable[[], None] | None = None
@@ -215,6 +219,7 @@ class VectorDBManager:
         self._pending_reindex.clear()
 
         self._embedding_cache.clear()
+        self._entity_cache_keys.clear()
 
         # Close shared HTTP clients
         if self._aiohttp_session is not None:
@@ -317,8 +322,8 @@ class VectorDBManager:
             # Create text representation for embedding
             text = self._create_entity_text(state)
 
-            # Generate embedding
-            embedding = await self._embed_text(text)
+            # Generate embedding (pass entity_id for cache eviction)
+            embedding = await self._embed_text(text, entity_id=entity_id)
 
             # Store in ChromaDB
             metadata = {
@@ -368,6 +373,11 @@ class VectorDBManager:
             collection = self._collection
             await self.hass.async_add_executor_job(lambda: collection.delete(ids=[entity_id]))
 
+            # Clean up embedding cache entry for this entity
+            old_key = self._entity_cache_keys.pop(entity_id, None)
+            if old_key is not None:
+                self._embedding_cache.pop(old_key, None)
+
             _LOGGER.debug("Removed entity from index: %s", entity_id)
 
         except Exception as err:
@@ -413,14 +423,23 @@ class VectorDBManager:
         if not entity_id or self._should_skip_entity(entity_id):
             return
 
+        # Skip reindex if state and attributes haven't changed
+        old_state = event.data.get("old_state")
+        new_state = event.data.get("new_state")
+        if (
+            old_state is not None
+            and new_state is not None
+            and old_state.state == new_state.state
+            and old_state.attributes == new_state.attributes
+        ):
+            return
+
         # Record pending reindex (deduplicates rapid changes for same entity)
         self._pending_reindex[entity_id] = asyncio.get_event_loop().time()
 
         # Schedule debounced batch reindex if not already scheduled
         if self._reindex_task is None or self._reindex_task.done():
-            self._reindex_task = asyncio.create_task(
-                self._async_debounced_reindex()
-            )
+            self._reindex_task = asyncio.create_task(self._async_debounced_reindex())
 
     async def _async_debounced_reindex(self) -> None:
         """Process pending reindex requests after debounce delay."""
@@ -563,9 +582,25 @@ class VectorDBManager:
                 parts.append(f"Source: {source}")
 
         # Add location information if available
-        area = state.attributes.get("area")
-        if area:
-            parts.append(f"Location: {area}")
+        entity_registry = er.async_get(self.hass)
+        area_registry = ar.async_get(self.hass)
+        device_registry = dr.async_get(self.hass)
+        try:
+            if entity_entry := entity_registry.async_get(entity_id):
+                area_id = entity_entry.area_id
+                if not area_id and entity_entry.device_id:
+                    device_entry = device_registry.async_get(entity_entry.device_id)
+                    if device_entry:
+                        area_id = device_entry.area_id
+                if area_id:
+                    if area := area_registry.async_get_area(area_id):
+                        parts.append(f"Location: {area.name}")
+                if entity_entry.aliases:
+                    clean_aliases = [a for a in entity_entry.aliases if isinstance(a, str)]
+                    if clean_aliases:
+                        parts.append(f"Aliases: {', '.join(clean_aliases)}")
+        except Exception:
+            _LOGGER.debug("Could not determine area for entity: %s", entity_id)
 
         return " | ".join(parts)
 
@@ -602,7 +637,6 @@ class VectorDBManager:
         if self._collection is None:
             try:
                 # Collection operations should also be in executor as they may do I/O
-                from functools import partial
 
                 assert self._client is not None  # Type narrowing for mypy
                 get_collection = partial(
@@ -615,11 +649,15 @@ class VectorDBManager:
             except Exception as err:
                 raise ContextInjectionError(f"Failed to access collection: {err}") from err
 
-    async def _embed_text(self, text: str) -> list[float]:
+    async def _embed_text(self, text: str, entity_id: str | None = None) -> list[float]:
         """Embed text using configured embedding model.
 
         Args:
             text: Text to embed
+            entity_id: Optional entity ID to enable per-entity cache eviction.
+                When provided, any previous cache entry for this entity is
+                removed before inserting the new one, preventing stale entries
+                from accumulating when entity state changes.
 
         Returns:
             Embedding vector
@@ -627,7 +665,17 @@ class VectorDBManager:
         cache_key = hashlib.md5(text.encode()).hexdigest()
         if cache_key in self._embedding_cache:
             self._embedding_cache.move_to_end(cache_key)
+            # Update entity→key mapping even on cache hit (idempotent)
+            if entity_id is not None:
+                self._entity_cache_keys[entity_id] = cache_key
             return self._embedding_cache[cache_key]
+
+        # Evict the previous cache entry for this entity (stale state text)
+        if entity_id is not None:
+            old_key = self._entity_cache_keys.get(entity_id)
+            if old_key is not None and old_key != cache_key:
+                self._embedding_cache.pop(old_key, None)
+            self._entity_cache_keys[entity_id] = cache_key
 
         try:
             embedding: list[float]
@@ -698,9 +746,7 @@ class VectorDBManager:
     async def _ensure_aiohttp_session(self) -> aiohttp.ClientSession:
         """Ensure aiohttp session exists for Ollama requests."""
         if self._aiohttp_session is None or self._aiohttp_session.closed:
-            self._aiohttp_session = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=30)
-            )
+            self._aiohttp_session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30))
         return self._aiohttp_session
 
     async def _embed_with_ollama(self, text: str) -> list[float]:

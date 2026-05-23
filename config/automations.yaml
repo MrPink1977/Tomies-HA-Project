@@ -1,27 +1,26 @@
 - id: '1769064036193'
   alias: Driveway Alarm2
-  description: ''
   triggers:
   - trigger: mqtt
     topic: msh/US/2/json/LongFast/!f669c5d0
-    value_template: '{{ value_json.type == ''detection'' }}'
+    value_template: '{{ value_json.type }}'
+    payload: detection
   conditions: []
   actions:
+  - wait_for_trigger:
+    - trigger: mqtt
+      topic: msh/US/2/json/LongFast/!f669c5d0
+      value_template: '{{ value_json.type }}'
+      payload: detection
+    timeout: 00:00:10
+    continue_on_timeout: false
   - action: assist_satellite.announce
-    metadata: {}
     target:
       entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
     data:
       message: I have detected a vehicle entering the driveway
       preannounce: true
-  - action: mqtt.publish
-    metadata: {}
-    data:
-      topic: msh/US/2/json/LongFast/!f669c5d0
-      payload: '{"from": 4134185060, "type": "sendtext", "payload": "DRIVEWAY: Motion
-        Detected", "channel": 0}'
   - action: notify.mobile_app_tomies_iphone
-    metadata: {}
     data:
       message: Motion detected
       title: "\U0001F7E1 DRIVEWAY"
@@ -41,18 +40,18 @@
       message: I have detected motion at the front door!
     action: tts.speak
   - target:
-      entity_id: media_player.android_tv_192_168_68_60
+      entity_id: media_player.android_tv_192_168_0_128
     action: media_player.turn_on
   - delay:
       milliseconds: 700
   - data:
-      entity_id: media_player.android_tv_192_168_68_60
-      command: am start -a android.intent.action.VIEW -d "rtsp://rtsp:Stream1977@192.168.68.53:554/h264Preview_01_sub"
+      entity_id: media_player.android_tv_192_168_0_128
+      command: am start -a android.intent.action.VIEW -d "rtsp://rtsp:Stream1977@192.168.0.94:554/h264Preview_01_sub"
     action: androidtv.adb_command
   - delay:
       seconds: 10
   - data:
-      entity_id: media_player.android_tv_192_168_68_60
+      entity_id: media_player.android_tv_192_168_0_128
       command: HOME
     action: androidtv.adb_command
   mode: restart
@@ -67,11 +66,11 @@
   actions:
   - action: light.turn_on
     metadata: {}
-    target:
-      entity_id: light.porchlight
     data:
       color_temp_kelvin: 6500
-      brightness_pct: 100
+      brightness_pct: 20
+    target:
+      entity_id: light.porch_light
   mode: single
 - id: '1770328901584'
   alias: Random Kanye Quote (Production - Clean)
@@ -114,7 +113,7 @@
   - action: light.turn_off
     metadata: {}
     target:
-      entity_id: light.porchlight
+      entity_id: light.porch_light
     data: {}
   mode: single
 - id: '1773185236283'
@@ -127,8 +126,64 @@
   - action: rest_command.table_toggle
     data: {}
   mode: single
+- id: '1773210283898'
+  alias: Bedtime Mode - Voice Trigger
+  description: Voice command triggers sleep mode
+  triggers:
+  - command:
+    - run the bedtime lights
+    - bedtime lights
+    - bedtime mode
+    - run bedtime mode
+    - goodnight lights
+    - time for bed
+    trigger: conversation
+  conditions: []
+  actions:
+  - alias: Set big lamps to dim warm
+    target:
+      entity_id:
+      - light.biglamp1
+      - light.biglamp2
+    data:
+      brightness_pct: 3
+      color_temp_kelvin: 2200
+    action: light.turn_on
+  - alias: Turn off remaining lights
+    target:
+      entity_id:
+      - light.ceilingfanlight
+      - light.counterlamp1
+      - light.counterlamp2
+    action: light.turn_off
+  - alias: Jarvis says goodnight
+    action: assist_satellite.announce
+    target:
+      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
+    data:
+      message: "{{ [\n  \"Alright Tomie, lights are down. Try not to doom scroll for
+        three hours this time.\",\n  \"Bedtime mode activated. The internet will still
+        be there tomorrow.\",\n  \"Lights dimmed. Get some sleep, you've earned it.\",\n
+        \ \"Going dark. Don't make me come back on in twenty minutes.\",\n  \"Sleep
+        mode engaged. Goodnight Tomie.\"\n] | random }}"
+      preannounce: false
+  - alias: Wait 1 hour then kill everything
+    delay:
+      hours: 1
+  - alias: Turn off last lamps and TV after 1 hour
+    target:
+      entity_id:
+      - light.biglamp2
+      - light.biglamp1
+    action: light.turn_off
+    data: {}
+  - target:
+      entity_id: media_player.android_tv_192_168_0_128
+    action: media_player.turn_off
+  mode: single
 - alias: Wake Up Mode - Mon/Wed/Thu 10:30
   description: Gradual sunrise 30 min before 10:30 wake up
+  id: 2ecf6d466c4649788bd7d00e22a04c26
   triggers:
   - trigger: time
     at: '10:00:00'
@@ -213,9 +268,9 @@
       preannounce: false
     action: assist_satellite.announce
   mode: single
-  id: 2ecf6d466c4649788bd7d00e22a04c26
 - alias: Wake Up Mode - Tuesday 9:30
   description: Gradual sunrise 30 min before 9:30 Rolla with Mom
+  id: b1ae556f4b8641b3a85a12ff2deaae5d
   triggers:
   - trigger: time
     at: 09:00:00
@@ -297,338 +352,10 @@
       preannounce: false
     action: assist_satellite.announce
   mode: single
-  id: b1ae556f4b8641b3a85a12ff2deaae5d
-- alias: Wake Up Mode - Friday 9:00
-  description: Gradual sunrise 30 min before 9:00 work day
-  triggers:
-  - trigger: time
-    at: 08:30:00
-  conditions:
-  - condition: time
-    weekday:
-    - fri
-  actions:
-  - alias: Step 1 - 5% warm amber
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 5
-      color_temp_kelvin: 2200
-      transition: 2
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 2 - 20%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 20
-      color_temp_kelvin: 2500
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 3 - 40%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 40
-      color_temp_kelvin: 2800
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 4 - 65%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 65
-      color_temp_kelvin: 3200
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 5 - 90% daylight
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 90
-      color_temp_kelvin: 4000
-      transition: 60
-    action: light.turn_on
-  - alias: Jarvis good morning Friday
-    target:
-      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
-    data:
-      message: "{{ [\n  \"Good morning Tomie. Work day. Time to get moving.\",\n  \"Rise
-        and shine. It's Friday, almost the weekend.\",\n  \"Morning Tomie. Ed's is
-        waiting.\",\n  \"Good morning. Don't be late for work.\"\n] | random }}"
-      preannounce: false
-    action: assist_satellite.announce
-  mode: single
-  id: 58b4cad917444db5804d5b9f6e0dfd1d
-- alias: Wake Up Mode - Saturday 9:45
-  description: Gradual sunrise 30 min before 9:45 Saturday
-  triggers:
-  - trigger: time
-    at: 09:15:00
-  conditions:
-  - condition: time
-    weekday:
-    - sat
-  actions:
-  - alias: Step 1 - 5% warm amber
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 5
-      color_temp_kelvin: 2200
-      transition: 2
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 2 - 20%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 20
-      color_temp_kelvin: 2500
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 3 - 40%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 40
-      color_temp_kelvin: 2800
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 4 - 65%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 65
-      color_temp_kelvin: 3200
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 5 - 90% daylight
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 90
-      color_temp_kelvin: 4000
-      transition: 60
-    action: light.turn_on
-  - alias: Jarvis good morning Saturday
-    target:
-      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
-    data:
-      message: "{{ [\n  \"Good morning Tomie. It's Saturday.\",\n  \"Rise and shine.
-        Weekend morning.\",\n  \"Morning Tomie. Enjoy your Saturday.\"\n] | random
-        }}"
-      preannounce: false
-    action: assist_satellite.announce
-  mode: single
-  id: 2984d1a792994c6eac66a71077755d85
-- alias: Wake Up Mode - Sunday 8:00
-  description: Gradual sunrise 30 min before 8:00 Sunday
-  triggers:
-  - trigger: time
-    at: 07:30:00
-  conditions:
-  - condition: time
-    weekday:
-    - sun
-  actions:
-  - alias: Step 1 - 5% warm amber
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 5
-      color_temp_kelvin: 2200
-      transition: 2
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 2 - 20%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 20
-      color_temp_kelvin: 2500
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 3 - 40%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 40
-      color_temp_kelvin: 2800
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 4 - 65%
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 65
-      color_temp_kelvin: 3200
-      transition: 60
-    action: light.turn_on
-  - delay:
-      minutes: 6
-  - alias: Step 5 - 90% daylight
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.counterlamp1
-      - light.counterlamp2
-    data:
-      brightness_pct: 90
-      color_temp_kelvin: 4000
-      transition: 60
-    action: light.turn_on
-  - alias: Jarvis good morning Sunday
-    target:
-      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
-    data:
-      message: "{{ [\n  \"Good morning Tomie. It's Sunday.\",\n  \"Rise and shine.
-        Sunday morning.\",\n  \"Morning Tomie. Hope you slept well.\"\n] | random
-        }}"
-      preannounce: false
-    action: assist_satellite.announce
-  mode: single
-  id: a5e5223c22b24190864970fa21c57676
-- id: '1773370000002'
-  alias: Freya - Add to Grocery List
-  description: Voice command to add an item to the shopping list
-  triggers:
-  - trigger: conversation
-    command:
-    - add {item} to the grocery list
-    - add {item} to my grocery list
-    - add {item} to the shopping list
-    - add {item} to my shopping list
-    - put {item} on the grocery list
-    - put {item} on my grocery list
-    - put {item} on the shopping list
-    - I need {item}
-    - we need {item}
-    - pick up {item}
-    - get {item} from the store
-  conditions: []
-  actions:
-  - alias: Add item to shopping list
-    action: todo.add_item
-    data:
-      item: '{{ trigger.slots.item }}'
-    target:
-      entity_id: todo.grocery_list
-  - alias: Freya confirms
-    action: assist_satellite.announce
-    target:
-      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
-    data:
-      preannounce: false
-      message: "{{ [\n  trigger.slots.item ~ \" added to the grocery list.\",\n  \"Got
-        it. \" ~ trigger.slots.item ~ \" is on the list.\",\n  \"Added \" ~ trigger.slots.item
-        ~ \" to the grocery list.\",\n  trigger.slots.item ~ \" — on the list.\"\n]
-        | random }}"
-  mode: single
-- id: '1773370000003'
-  alias: Freya - Read Grocery List
-  description: Reads back the current grocery list
-  triggers:
-  - trigger: conversation
-    command:
-    - what's on the grocery list
-    - what is on the grocery list
-    - read me the grocery list
-    - read the grocery list
-    - what do we need from the store
-    - what do I need from the store
-    - read my grocery list
-    - grocery list
-    - shopping list
-  conditions: []
-  actions:
-  - alias: Get list items
-    action: todo.get_items
-    target:
-      entity_id: todo.shopping_list
-    data:
-      status: needs_action
-    response_variable: list_items
-  - alias: Freya reads the list
-    action: assist_satellite.announce
-    target:
-      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
-    data:
-      preannounce: false
-      message: '{% set items = list_items[''todo.shopping_list''][''items''] %} {%
-        if items | count == 0 %} Your grocery list is empty. {% elif items | count
-        == 1 %} You have one item on the list: {{ items[0].summary }}. {% else %}
-        You have {{ items | count }} items on the grocery list: {% for item in items
-        %}{{ item.summary }}{% if not loop.last %}, {% endif %}{% endfor %}. {% endif
-        %}'
-  mode: single
 - id: '1773380000001'
   alias: Freya - Conversation Mode Engine
-  description: 'Arms on first response, keeps conversation alive after each reply,
+  description: Arms on first response, keeps conversation alive after each reply,
     times out after 7s silence, hard-resets at 6 turns.
-
-    '
   triggers:
   - trigger: state
     entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
@@ -765,4 +492,134 @@
       entity_id: input_number.freya_follow_up_count
     data:
       value: 0
+  mode: single
+- id: research_report_webhook
+  alias: Research Report Done — Notify Tomie
+  triggers:
+  - trigger: webhook
+    webhook_id: research_report_done
+    allowed_methods:
+    - POST
+    local_only: false
+  conditions: []
+  actions:
+  - action: persistent_notification.create
+    data:
+      title: "\U0001F4C4 {{ trigger.json.title }}"
+      message: '{% if trigger.json.error %} ⚠️ Research failed. Check logs. {% else
+        %} Report ready → [Open PDF](http://192.168.0.40:8123{{ trigger.json.pdf_path
+        }}) {% endif %}
+
+        '
+      notification_id: research_{{ now().strftime('%Y%m%d%H%M%S') }}
+  - action: tts.speak
+    target:
+      entity_id: tts.elevenlabs_text_to_speech
+    data:
+      media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
+      cache: true
+      message: '{% if trigger.json.error %} Tomie, the research job failed. Check
+        the logs. {% else %} Your research report on {{ trigger.json.title }} is ready.
+        {% endif %}
+
+        '
+  mode: parallel
+  max: 5
+- id: freya_research_voice_trigger
+  alias: Freya Research Voice Trigger
+  triggers:
+  - trigger: conversation
+    command:
+    - give me a report on {query}
+    - give me a detailed report on {query}
+    - give me a quick report on {query}
+    - make me a report on {query}
+    - I need a report on {query}
+    - create a report on {query}
+    - write a report on {query}
+    - run a report on {query}
+    - deep dive on {query}
+  conditions: []
+  actions:
+  - action: assist_satellite.announce
+    metadata: {}
+    data:
+      message: No problem, Tommy. I'll let you know when i've finished.
+      preannounce: true
+  - action: script.freya_research_report
+    data:
+      query: '{{ trigger.slots.query }}'
+      title: '{{ trigger.slots.query }}'
+      iterations: '{{ 1 if ''quick'' in trigger.slots.query else 5 if ''detailed''
+        in trigger.slots.query else 3 }}'
+  mode: single
+- id: freya_find_my_phone
+  alias: Freya - Find My Phone
+  triggers:
+  - trigger: conversation
+    command:
+    - find my phone
+    - where is my phone
+    - ping my phone
+    - ring my phone
+    - call my phone
+  conditions: []
+  actions:
+  - action: assist_satellite.announce
+    target:
+      entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
+    data:
+      preannounce: false
+      message: Pinging your phone now Tomie.
+  - repeat:
+      count: 10
+      sequence:
+      - action: notify.mobile_app_tomies_iphone
+        data:
+          message: "\U0001F4F1 PING! Find your phone!"
+          title: "\U0001F50A FIND MY PHONE"
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1.0
+      - delay:
+          seconds: 8
+  mode: single
+- id: '1778343791517'
+  alias: Voice - Go To Command Screen
+  description: ''
+  triggers:
+  - command:
+    - go to command screen
+    - open command screen
+    - show command screen
+    trigger: conversation
+  actions:
+  - action: script.go_to_command_screen
+  mode: single
+- id: '1779077414849'
+  alias: ESP32 Snapshot When Reolink Detects Motion
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.front_door_motion
+    - binary_sensor.motion_light_person
+    - binary_sensor.motion_light_animal
+    - binary_sensor.motion_light_vehicle
+    to: 'on'
+  actions:
+  - action: camera.snapshot
+    target:
+      entity_id: camera.esp32s3_cam
+    data:
+      filename: /config/www/esp32_latest.jpg
+  - action: notify.notify_mobile_app_estes
+    data:
+      title: ESP32 Camera Snapshot
+      message: Reolink detected motion.
+      data:
+        image: /local/esp32_latest.jpg
   mode: single

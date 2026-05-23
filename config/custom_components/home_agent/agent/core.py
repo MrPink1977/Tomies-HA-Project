@@ -94,6 +94,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import date, datetime
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -112,7 +113,6 @@ from homeassistant.helpers import intent, template
 from ..const import (
     CONF_CONTEXT_ENTITIES,
     CONF_CONTEXT_MODE,
-    CONF_DEBUG_LOGGING,
     CONF_EMIT_EVENTS,
     CONF_EXTERNAL_LLM_ENABLED,
     CONF_HISTORY_ENABLED,
@@ -120,10 +120,10 @@ from ..const import (
     CONF_HISTORY_MAX_TOKENS,
     CONF_HISTORY_PERSIST,
     CONF_LLM_MODEL,
+    CONF_MEMORY_EXTRACTION_ENABLED,
     CONF_PROMPT_CUSTOM_ADDITIONS,
     CONF_PROMPT_INCLUDE_LABELS,
     CONF_PROMPT_USE_DEFAULT,
-    CONF_STREAMING_ENABLED,
     CONF_THINKING_ENABLED,
     CONF_TOOLS_CUSTOM,
     CONF_TOOLS_MAX_CALLS_PER_TURN,
@@ -132,7 +132,6 @@ from ..const import (
     DEFAULT_HISTORY_MAX_TOKENS,
     DEFAULT_MEMORY_EXTRACTION_ENABLED,
     DEFAULT_PROMPT_INCLUDE_LABELS,
-    DEFAULT_STREAMING_ENABLED,
     DEFAULT_SYSTEM_PROMPT,
     DEFAULT_THINKING_ENABLED,
     DEFAULT_TOOLS_MAX_CALLS_PER_TURN,
@@ -141,30 +140,27 @@ from ..const import (
     EVENT_CONVERSATION_STARTED,
     EVENT_ERROR,
     EVENT_STREAMING_ERROR,
-    CONF_MEMORY_EXTRACTION_ENABLED,
     TOOL_QUERY_EXTERNAL_LLM,
-)
-from ..exceptions import (
-    HomeAgentError,
-    AuthenticationError,
-    TokenLimitExceeded,
-    RateLimitExceeded,
-    PermissionDenied,
-    EntityNotFoundError,
-    ServiceUnavailableError,
-    ContextInjectionError,
 )
 from ..context_manager import ContextManager
 from ..conversation import ConversationHistoryManager
+from ..exceptions import (
+    AuthenticationError,
+    ContextInjectionError,
+    EntityNotFoundError,
+    PermissionDenied,
+    RateLimitExceeded,
+    ServiceUnavailableError,
+    TokenLimitExceeded,
+)
 from ..helpers import strip_thinking_blocks
 from ..tool_handler import ToolHandler
 from ..tools import HomeAssistantControlTool, HomeAssistantQueryTool
 from ..tools.custom import CustomToolHandler
 from ..tools.external_llm import ExternalLLMTool
-
 from .llm import LLMMixin
-from .streaming import StreamingMixin
 from .memory_extraction import MemoryExtractionMixin
+from .streaming import StreamingMixin
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1116,7 +1112,8 @@ class HomeAgent(
                     if content_item.tool_calls:
                         for tc_idx, tc in enumerate(content_item.tool_calls):
                             _LOGGER.debug(
-                                "Iteration %d: AssistantContent[%d] tool_call[%d]: id=%s, tool_name=%s",
+                                "Iteration %d: AssistantContent[%d] "
+                                "tool_call[%d]: id=%s, tool_name=%s",
                                 iteration + 1,
                                 idx,
                                 tc_idx,
@@ -1173,12 +1170,17 @@ class HomeAgent(
                     messages.append(msg)
 
                 elif isinstance(content_item, conversation.ToolResultContent):
+                    def json_encoder(obj):
+                        if isinstance(obj, (datetime, date)):
+                            return obj.isoformat()
+                        raise TypeError ("Object of type %s is not JSON serializable" % type(obj))
+
                     messages.append(
                         {
                             "role": "tool",
                             "tool_call_id": content_item.tool_call_id,
                             "name": content_item.tool_name,
-                            "content": json.dumps(content_item.tool_result),
+                            "content": json.dumps(content_item.tool_result, default=json_encoder),
                         }
                     )
 
@@ -1215,7 +1217,8 @@ class HomeAgent(
                 if last_assistant_content.tool_calls:
                     for tc_idx, tc in enumerate(last_assistant_content.tool_calls):
                         _LOGGER.debug(
-                            "Iteration %d: last_assistant_content tool_call[%d]: id=%s, tool_name=%s",
+                            "Iteration %d: last_assistant_content "
+                            "tool_call[%d]: id=%s, tool_name=%s",
                             iteration + 1,
                             tc_idx,
                             tc.id,

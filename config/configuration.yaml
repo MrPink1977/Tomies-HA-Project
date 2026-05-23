@@ -11,7 +11,7 @@ sensor:
       - 'time'
   - platform: rest
     name: "Table Status"
-    resource: "http://192.168.68.71/status"
+    resource: "http://192.168.0.41/status"
     value_template: "{{ value_json.state }}"
     json_attributes:
       - fault
@@ -32,16 +32,22 @@ homeassistant:
 # --- REST commands for the table ---
 rest_command:
   table_open:
-    url: "http://192.168.68.71/open"
+    url: "http://192.168.0.41/open"
   table_close:
-    url: "http://192.168.68.71/close"
+    url: "http://192.168.0.41/close"
   table_stop:
-    url: "http://192.168.68.71/stop"
+    url: "http://192.168.0.41/stop"
   table_reset:
-    url: "http://192.168.68.71/reset"
+    url: "http://192.168.0.41/reset"
   table_toggle:
-    url: "http://192.168.68.71/toggle"
-    
+    url: "http://192.168.0.41/toggle"
+  make_research_report:
+    url: "http://research-bridge:8099/research"
+    method: POST
+    headers:
+      content-type: "application/json"
+    payload: '{"query": "{{ query }}", "title": "{{ title }}", "iterations": {{ iterations | default(3) }}}'
+    timeout: 30 
 # --- Template cover for the table ---
 cover:
   - platform: template
@@ -364,3 +370,23 @@ input_number:
     max: 10
     step: 1
     mode: box
+template:
+  - sensor:
+      - name: "House Consumption"
+        unique_id: house_consumption_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ (states('sensor.sem_c_active_power') | float(0))
+             + (states('sensor.sem_b_active_power') | float(0)) }}
+
+      - name: "Grid Power"
+        unique_id: grid_power_w
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{ (states('sensor.sem_c_active_power') | float(0))
+             + (states('sensor.sem_b_active_power') | float(0))
+             - (states('sensor.inv4_sn_3010558210_pv_power') | float(0)) }}

@@ -452,8 +452,31 @@ class MeshtasticConnection:
             if config_obj is None:
                 raise ValueError(f"Config section '{section}' not found on node")
 
-            _apply_protobuf_values(config_obj, values, section)
-            node.writeConfig(section)
+            # Fixed-position lat/lng/altitude are not part of PositionConfig —
+            # they live on the node's Position and are set via a separate
+            # admin message (setFixedPosition / removeFixedPosition).
+            remaining = dict(values)
+            fixed_position = None
+            fixed_lat = fixed_lng = fixed_altitude = 0
+            if section == "position":
+                fixed_lat = remaining.pop("fixed_lat", 0) or 0
+                fixed_lng = remaining.pop("fixed_lng", 0) or 0
+                fixed_altitude = remaining.pop("fixed_altitude", 0) or 0
+                if "fixed_position" in remaining:
+                    fixed_position = remaining.pop("fixed_position")
+
+            if remaining:
+                _apply_protobuf_values(config_obj, remaining, section)
+                node.writeConfig(section)
+
+            if fixed_position is True:
+                node.setFixedPosition(
+                    float(fixed_lat),
+                    float(fixed_lng),
+                    int(fixed_altitude),
+                )
+            elif fixed_position is False:
+                node.removeFixedPosition()
 
         await self._hass.async_add_executor_job(_write)
 
@@ -624,9 +647,11 @@ class MeshtasticConnection:
             return SerialInterface(devPath=self._serial_path)
 
         if self._connection_type == ConnectionType.BLE:
-            from meshtastic.ble_interface import BLEInterface
+            from .ha_ble import create_ha_ble_interface
 
-            return BLEInterface(address=self._ble_address)
+            return create_ha_ble_interface(
+                hass=self._hass, address=self._ble_address
+            )
 
         raise ValueError(f"Unknown connection type: {self._connection_type}")
 
@@ -723,12 +748,38 @@ class MeshtasticConnection:
                 self._async_reconnect_loop()
             )
 
-    async def _async_reconnect_loop(self) -> None:
+    async def async_force_reconnect(self) -> None:
+        """Cancel any pending backoff and attempt to reconnect immediately."""
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
+            # Wait for the task to actually finish so it can't race with us
+            # mid-`_create_interface` and stomp on `self._interface`.
+            try:
+                await self._reconnect_task
+            except (asyncio.CancelledError, Exception):  # noqa: BLE001
+                pass
+            self._reconnect_task = None
+
+        if self._interface is not None:
+            old = self._interface
+            self._interface = None
+            try:
+                await self._hass.async_add_executor_job(old.close)
+            except Exception:  # noqa: BLE001
+                pass
+
+        self._set_state(ConnectionState.RECONNECTING)
+        self._reconnect_task = asyncio.ensure_future(
+            self._async_reconnect_loop(initial_delay=0)
+        )
+
+    async def _async_reconnect_loop(self, initial_delay: int = MIN_RECONNECT_DELAY) -> None:
         """Attempt to reconnect with exponential backoff."""
-        delay = MIN_RECONNECT_DELAY
+        delay = initial_delay
         while self._state == ConnectionState.RECONNECTING:
-            _LOGGER.debug("Reconnecting in %d seconds...", delay)
-            await asyncio.sleep(delay)
+            if delay > 0:
+                _LOGGER.debug("Reconnecting in %d seconds...", delay)
+                await asyncio.sleep(delay)
             if self._state != ConnectionState.RECONNECTING:
                 return
 
