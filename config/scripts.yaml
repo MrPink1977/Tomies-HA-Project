@@ -40,32 +40,22 @@ freya_research_report:
   fields:
     query:
       description: The research topic
-      example: Meshtastic LoRa driveway sensor
+      example: Open WebUI integration
       required: true
     title:
       description: Report title (optional)
-      example: Meshtastic Research
+      example: Open WebUI Research
       required: false
     iterations:
-      description: 'Depth: 1=quick, 3=standard, 5=deep'
+      description: "Depth: 1=quick, 3=standard, 5=deep"
       example: 3
       required: false
   sequence:
-  - action: rest_command.make_research_report
-    data:
-      query: '{{ query }}'
-      title: '{{ title | default(query) }}'
-      iterations: '{{ iterations | default(3) }}'
-  - delay:
-      seconds: 2
-  - action: tts.speak
-    target:
-      entity_id: tts.elevenlabs_text_to_speech
-    data:
-      media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
-      cache: false
-      message: Got it. I'll look into {{ title | default(query) }}. I'll let you know
-        when your report is ready.
+    - action: rest_command.make_research_report
+      data:
+        query: "{{ query }}"
+        title: "{{ title if title is defined and title | length > 0 else query }}"
+        iterations: "{{ iterations if iterations is defined else 3 }}"
 go_to_command_screen:
   alias: Go To Command Screen
   description: Switches the bedroom TV to HDMI 4 (HW4) and opens the FBIVAN command

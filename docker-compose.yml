@@ -228,15 +228,67 @@ services:
       - LDR_USERNAME=admin
       - LDR_PASSWORD=freyaresearch2026
       - HA_URL=http://homeassistant:8123
-      # Replace with a long-lived HA token (Settings → Profile → Long-Lived Access Tokens)
       - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
       - HA_WEBHOOK_ID=research_report_done
+      - GMAIL_USER=tomie.pearson@gmail.com
+      - GMAIL_APP_PASS=prrcwiwwwtkfsbsb
+      - GMAIL_TO=tomie.pearson@gmail.com
+      - CHROMADB_URL=http://chromadb:8000
+      - OLLAMA_URL=http://ollama:11434
     networks:
       - ha_network
     restart: unless-stopped
     depends_on:
       - local-deep-research
       - homeassistant
+
+  # ── LiteLLM ─────────────────────────────────────────────────
+  # Unified model proxy — sits in front of Ollama and exposes named model
+  # endpoints (freya-main, freya-reasoning, freya-fast, freya-vision)
+  # OpenAI-compatible API at http://localhost:4000
+  # Open WebUI points here instead of directly at Ollama
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: litellm
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml
+    command: --config /app/config.yaml --port 4000
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - ollama
+
+  # ── Open WebUI ───────────────────────────────────────────────
+  # Unified AI workspace — model manager, pipeline router, RAG UI, personas
+  # Connects to LiteLLM proxy for named model routing
+  # Web UI: http://localhost:3000
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3000:8080"
+    volumes:
+      - ./open-webui:/app/backend/data
+    environment:
+      - TZ=America/New_York
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OPENAI_API_BASE_URL=http://litellm:4000/v1
+      - OPENAI_API_KEY=freya-litellm-key
+      - WEBUI_SECRET_KEY=freyaopenwebui2026
+      - ENABLE_SIGNUP=false
+      - DEFAULT_USER_ROLE=admin
+      - WEBUI_NAME=Freya AI
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - ollama
+      - litellm
 
 networks:
   ha_network:

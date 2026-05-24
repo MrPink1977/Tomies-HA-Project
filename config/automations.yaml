@@ -494,37 +494,23 @@
       value: 0
   mode: single
 - id: research_report_webhook
-  alias: Research Report Done — Notify Tomie
+  alias: Freya Research Report Done
   triggers:
   - trigger: webhook
     webhook_id: research_report_done
     allowed_methods:
     - POST
-    local_only: false
   conditions: []
   actions:
-  - action: persistent_notification.create
-    data:
-      title: "\U0001F4C4 {{ trigger.json.title }}"
-      message: '{% if trigger.json.error %} ⚠️ Research failed. Check logs. {% else
-        %} Report ready → [Open PDF](http://192.168.0.40:8123{{ trigger.json.pdf_path
-        }}) {% endif %}
-
-        '
-      notification_id: research_{{ now().strftime('%Y%m%d%H%M%S') }}
   - action: tts.speak
     target:
       entity_id: tts.elevenlabs_text_to_speech
     data:
       media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
-      cache: true
-      message: '{% if trigger.json.error %} Tomie, the research job failed. Check
-        the logs. {% else %} Your research report on {{ trigger.json.title }} is ready.
-        {% endif %}
-
-        '
-  mode: parallel
-  max: 5
+      cache: false
+      message: Your research report is ready. You can find it in the reports section
+        on the dashboard.
+  mode: single
 - id: freya_research_voice_trigger
   alias: Freya Research Voice Trigger
   triggers:
@@ -541,17 +527,20 @@
     - deep dive on {query}
   conditions: []
   actions:
-  - action: assist_satellite.announce
-    metadata: {}
-    data:
-      message: No problem, Tommy. I'll let you know when i've finished.
-      preannounce: true
   - action: script.freya_research_report
     data:
       query: '{{ trigger.slots.query }}'
       title: '{{ trigger.slots.query }}'
-      iterations: '{{ 1 if ''quick'' in trigger.slots.query else 5 if ''detailed''
-        in trigger.slots.query else 3 }}'
+      iterations: '{% if ''quick'' in trigger.sentence %}1 {% elif ''detailed'' in
+        trigger.sentence or ''deep'' in trigger.sentence %}5 {% else %}3{% endif %}'
+  - action: tts.speak
+    target:
+      entity_id: tts.elevenlabs_text_to_speech
+    data:
+      media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
+      cache: false
+      message: Got it. Researching {{ trigger.slots.query }}. I'll let you know when
+        your report is ready.
   mode: single
 - id: freya_find_my_phone
   alias: Freya - Find My Phone
