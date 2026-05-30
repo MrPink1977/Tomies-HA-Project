@@ -11,7 +11,7 @@ sensor:
       - 'time'
   - platform: rest
     name: "Table Status"
-    resource: "http://192.168.0.41/status"
+    resource: "http://192.168.0.76/status"
     value_template: "{{ value_json.state }}"
     json_attributes:
       - fault
@@ -32,15 +32,15 @@ homeassistant:
 # --- REST commands for the table ---
 rest_command:
   table_open:
-    url: "http://192.168.0.41/open"
+    url: "http://192.168.0.76/open"
   table_close:
-    url: "http://192.168.0.41/close"
+    url: "http://192.168.0.76/close"
   table_stop:
-    url: "http://192.168.0.41/stop"
+    url: "http://192.168.0.76/stop"
   table_reset:
-    url: "http://192.168.0.41/reset"
+    url: "http://192.168.0.76/reset"
   table_toggle:
-    url: "http://192.168.0.41/toggle"
+    url: "http://192.168.0.76/toggle"
   make_research_report:
     url: "http://research-bridge:8099/research"
     method: POST
@@ -87,7 +87,7 @@ home_agent:
         url: "https://api.search.brave.com/res/v1/web/search"
         method: GET
         headers:
-          X-Subscription-Token: "BSAbUbh8jN3VAT2MyUa2CFjoT7YwBE_"
+          X-Subscription-Token: !secret brave_search_api_key
         query_params:
           q: "{{ query }}"
           count: 5
@@ -132,7 +132,7 @@ home_agent:
         url: "http://api.wolframalpha.com/v1/result"
         method: GET
         query_params:
-          appid: "6JXUA7-K85G"
+          appid: !secret wolfram_alpha_app_id
           i: "{{ query }}"
           units: "{{ units | default('imperial') }}"
         timeout: 15
@@ -155,7 +155,7 @@ home_agent:
         query_params:
           country: "{{ country | default('us') }}"
           category: "{{ category | default('general') }}"
-          apiKey: "8adf02de2b7941d28538ec81c0e5bc8e"
+          apiKey: !secret newsapi_key
           pageSize: 5
         timeout: 10
 
@@ -178,7 +178,7 @@ home_agent:
           - to_currency
       handler:
         type: rest
-        url: "https://v6.exchangerate-api.com/v6/8c1eaf4c9a1a35777b50d5d4/pair/{{ from_currency }}/{{ to_currency }}"
+        url: !secret exchange_rate_pair_url
         method: GET
         timeout: 10
 

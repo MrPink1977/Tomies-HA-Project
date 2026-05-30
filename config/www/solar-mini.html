@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Solar / Energy</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber: #ff9500;
+    --amber-hot: #ffb21a;
+    --amber-soft: rgba(255,149,0,0.26);
+    --green: #2eff78;
+    --green-ha: #43a047;
+    --yellow-ha: #ffad14;
+    --red-ha: #ef443b;
+    --blue: #4d7dff;
+    --bg: #07090c;
+    --card: rgba(20,22,24,0.88);
+    --card-border: rgba(255,255,255,0.11);
+    --cyber-line: rgba(255,149,0,0.10);
+    --text: #eef2fa;
+    --muted: rgba(221,232,255,0.72);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Rajdhani',system-ui,sans-serif; }
+  body::after { content:''; position:fixed; inset:0; z-index:50; pointer-events:none; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.14) 2px,rgba(0,0,0,0.14) 4px); opacity:0.8; }
+  .solar-panel { width:100%; height:100%; min-height:0; display:flex; flex-direction:column; background: linear-gradient(90deg,rgba(255,149,0,0.052) 1px,transparent 1px), linear-gradient(0deg,rgba(255,149,0,0.038) 1px,transparent 1px), radial-gradient(circle at 50% 32%,rgba(255,149,0,0.09),transparent 38%), radial-gradient(circle at 50% 68%,rgba(46,255,120,0.055),transparent 38%), linear-gradient(180deg,#0c0f13 0%,#050608 100%); background-size:32px 32px,32px 32px,auto,auto,auto; }
+  .mini-header { height:28px; min-height:28px; border-bottom:1px solid rgba(255,149,0,0.28); background:linear-gradient(90deg,rgba(255,149,0,0.09),rgba(255,149,0,0.025)); display:flex; align-items:center; justify-content:space-between; padding:0 12px; position:relative; z-index:3; }
+  .mini-header::before { content:''; width:3px; align-self:stretch; margin:5px 9px 5px 0; background:var(--amber-hot); box-shadow:0 0 10px rgba(255,178,26,0.48); }
+  .mini-title { margin-right:auto; font-family:'Bebas Neue',sans-serif; color:var(--amber-hot); font-size:15px; letter-spacing:3px; line-height:1; text-shadow:0 0 10px rgba(255,149,0,0.54); white-space:nowrap; }
+  .mini-title .icon { color:var(--amber-hot); margin-right:8px; font-family:'Share Tech Mono',monospace; font-size:12px; vertical-align:1px; }
+  .mini-status { display:inline-flex; align-items:center; gap:5px; border:1px solid rgba(255,149,0,0.24); background:rgba(15,18,21,0.85); padding:1px 7px; font-family:'Share Tech Mono',monospace; font-weight:400; font-size:8px; letter-spacing:1px; color:rgba(216,235,255,0.62); }
+  .mini-status::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 1.35s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.38} }
+  .dashboard { flex:1; min-height:0; width:100%; display:flex; flex-direction:column; justify-content:center; gap:clamp(8px,1.8vh,12px); padding:clamp(12px,3vh,22px) clamp(14px,3vw,28px) clamp(10px,2.4vh,18px); }
+  .gauge-card { width:min(100%,650px); height:clamp(200px,57vh,272px); margin:0 auto; border-radius:14px; border:1px solid rgba(255,255,255,0.12); background: linear-gradient(90deg,rgba(255,149,0,0.035) 1px,transparent 1px), linear-gradient(0deg,rgba(255,149,0,0.026) 1px,transparent 1px), linear-gradient(180deg,rgba(28,29,30,0.95),rgba(18,19,20,0.96)); background-size:28px 28px,28px 28px,auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),inset 0 0 40px rgba(255,149,0,0.025),0 18px 38px rgba(0,0,0,0.34); position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  .gauge-card::before, .gauge-card::after { content:''; position:absolute; width:18px; height:18px; border-color:rgba(255,149,0,0.34); border-style:solid; pointer-events:none; }
+  .gauge-card::before { left:10px; top:10px; border-width:1px 0 0 1px; }
+  .gauge-card::after { right:10px; bottom:10px; border-width:0 1px 1px 0; }
+  .gauge-shell { width:min(92%,430px); height:min(92%,235px); position:relative; margin-top:6px; }
+  #gauge-svg { width:100%; height:100%; overflow:visible; display:block; }
+  .gauge-track, .gauge-segment { fill:none; stroke-width:38; stroke-linecap:butt; }
+  .gauge-track { stroke:rgba(255,255,255,0.055); }
+  .segment-red { stroke:var(--red-ha); }
+  .segment-yellow { stroke:var(--yellow-ha); }
+  .segment-green { stroke:var(--green-ha); }
+  .gauge-segment { filter:drop-shadow(0 0 5px rgba(0,0,0,0.35)); }
+  .needle-group { filter:drop-shadow(0 3px 3px rgba(0,0,0,0.72)); }
+  .needle-hub { fill:#dfe4ec; stroke:#2b2d31; stroke-width:3; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.65)); }
+  .watts-readout { position:absolute; left:0; right:0; top:166px; text-align:center; font-family:'Rajdhani',sans-serif; font-size:clamp(31px,6.5vw,43px); line-height:1; font-weight:600; letter-spacing:0; color:#f1f3fa; text-shadow:0 2px 0 rgba(0,0,0,0.55),0 0 14px rgba(255,255,255,0.07); }
+  .watts-readout .unit { margin-left:7px; font-size:0.86em; }
+  .gauge-label { position:absolute; left:0; right:0; top:210px; text-align:center; color:rgba(235,239,250,0.9); font-size:clamp(13px,2.4vw,17px); font-weight:600; text-shadow:0 1px 0 rgba(0,0,0,0.72); }
+  .stats { width:min(100%,650px); margin:0 auto; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:clamp(8px,1.4vw,12px); }
+  .stat { min-height:clamp(74px,18vh,94px); border-radius:13px; border:1px solid rgba(255,255,255,0.10); background: linear-gradient(90deg,rgba(255,149,0,0.035) 1px,transparent 1px), linear-gradient(0deg,rgba(255,149,0,0.025) 1px,transparent 1px), linear-gradient(180deg,rgba(6,6,6,0.96),rgba(1,1,2,0.98)); background-size:24px 24px,24px 24px,auto; box-shadow:inset 0 1px 0 rgba(255,255,255,0.035),0 13px 24px rgba(0,0,0,0.34); padding:clamp(11px,2.5vh,17px) clamp(12px,2.2vw,18px); overflow:hidden; }
+  .stat-label { color:#eef2fa; font-size:clamp(16px,3vw,20px); line-height:1; font-weight:800; letter-spacing:0.4px; text-transform:uppercase; text-shadow:0 1px 0 rgba(0,0,0,0.65); white-space:nowrap; }
+  .stat-value { margin-top:4px; font-size:clamp(26px,5.2vw,34px); line-height:1; font-weight:800; letter-spacing:0; white-space:nowrap; }
+  .solar-value { color:var(--amber-hot); text-shadow:0 0 12px rgba(255,178,26,0.24); }
+  .consume-value { color:#f5f7ff; text-shadow:0 0 12px rgba(255,255,255,0.09); }
+  .grid-value { color:var(--green); text-shadow:0 0 14px rgba(46,255,120,0.23); }
+  @media (max-height:340px) { .dashboard{padding-top:8px;padding-bottom:8px;gap:7px;} .gauge-card{height:190px;} .gauge-shell{width:min(90%,355px);height:170px;} .watts-readout{top:129px;font-size:clamp(27px,5.4vw,34px);} .gauge-label{top:160px;font-size:13px;} .stats .stat{min-height:62px;padding-top:9px;padding-bottom:8px;} .stat-label{font-size:14px;} .stat-value{font-size:24px;} }
+  @media (max-width:500px) { .mini-title{font-size:13px;letter-spacing:3px;} .mini-status{display:none;} .dashboard{padding-left:10px;padding-right:10px;} .stats{gap:6px;} .stat{padding-left:9px;padding-right:9px;} .stat-label{font-size:14px;} .stat-value{font-size:23px;} }
+</style>
+</head>
+<body>
+  <main class="solar-panel" aria-label="Solar energy dashboard">
+    <header class="mini-header">
+      <div class="mini-title"><span class="icon">☀</span>SOLAR / ENERGY</div>
+      <div class="mini-status">LIVE</div>
+    </header>
+    <section class="dashboard">
+      <section class="gauge-card" aria-label="Solar production gauge">
+        <div class="gauge-shell">
+          <svg id="gauge-svg" viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+            <path id="arc-track" class="gauge-track" d="" />
+            <path id="arc-red" class="gauge-segment segment-red" d="" />
+            <path id="arc-yellow" class="gauge-segment segment-yellow" d="" />
+            <path id="arc-green" class="gauge-segment segment-green" d="" />
+            <g id="needle" class="needle-group" transform="rotate(0 180 160)">
+              <path class="needle-body" d="M180 153 L74 160 L180 167 Z" fill="#eef1f7" stroke="#2b2d31" stroke-width="2" stroke-linejoin="round" />
+              <circle class="needle-hub" cx="180" cy="160" r="7" />
+            </g>
+          </svg>
+          <div class="watts-readout"><span id="gauge-num">--</span><span class="unit">W</span></div>
+          <div class="gauge-label">Solar Production</div>
+        </div>
+      </section>
+      <section class="stats">
+        <article class="stat">
+          <div class="stat-label">Solar</div>
+          <div class="stat-value solar-value"><span id="s-solar">--</span>W</div>
+        </article>
+        <article class="stat">
+          <div class="stat-label">Consumption</div>
+          <div class="stat-value consume-value"><span id="s-consume">--</span>W</div>
+        </article>
+        <article class="stat">
+          <div class="stat-label">Grid</div>
+          <div class="stat-value grid-value"><span id="s-grid">--</span>W</div>
+        </article>
+      </section>
+    </section>
+  </main>
+<script>
+const HA_URL   = location.origin;
+const HA_TOKEN = getHaToken();
+const POLL_MS  = 10000;
+const MAX_W    = 8000;
+const E_SOLAR   = 'sensor.inv4_sn_3010558210_pv_power';
+const E_CONSUME = 'sensor.house_consumption';
+const E_GRID    = 'sensor.grid_power';
+const CENTER = { x:180, y:160 };
+const RADIUS = 120;
+
+function getHaToken(){try{const raw=localStorage.getItem('hassTokens');return raw?JSON.parse(raw).access_token||'':'';}catch{return '';}}
+
+function polarToCartesian(angleDeg) {
+  const r = (angleDeg * Math.PI) / 180;
+  return { x: CENTER.x + RADIUS * Math.cos(r), y: CENTER.y + RADIUS * Math.sin(r) };
+}
+function describeArc(s, e) {
+  const st = polarToCartesian(s), en = polarToCartesian(e);
+  return `M ${st.x.toFixed(3)} ${st.y.toFixed(3)} A ${RADIUS} ${RADIUS} 0 ${Math.abs(e-s)<=180?'0':'1'} 1 ${en.x.toFixed(3)} ${en.y.toFixed(3)}`;
+}
+function drawGauge() {
+  document.getElementById('arc-track').setAttribute('d', describeArc(180, 360));
+  document.getElementById('arc-red').setAttribute('d', describeArc(180, 192));
+  document.getElementById('arc-yellow').setAttribute('d', describeArc(192, 247.5));
+  document.getElementById('arc-green').setAttribute('d', describeArc(247.5, 360));
+}
+function setNeedle(watts) {
+  const f = Math.max(0, Math.min(MAX_W, watts)) / MAX_W;
+  const angle = f * 180;
+  document.getElementById('needle').setAttribute('transform', `rotate(${angle.toFixed(2)} ${CENTER.x} ${CENTER.y})`);
+}
+function setGridColor(w) {
+  const el = document.querySelector('.grid-value');
+  if (!el) return;
+  el.style.color = w > 0 ? 'var(--red-ha)' : 'var(--green)';
+  el.style.textShadow = w > 0 ? '0 0 14px rgba(239,68,59,0.28)' : '0 0 14px rgba(46,255,120,0.23)';
+}
+async function getState(e) {
+  try {
+    const r = await fetch(`${HA_URL}/api/states/${e}`, { headers:{ Authorization:`Bearer ${HA_TOKEN}` }, cache:'no-store' });
+    return r.ok ? (await r.json()).state : null;
+  } catch { return null; }
+}
+function render(sw, cw, gw) {
+  document.getElementById('gauge-num').textContent = Math.round(sw).toLocaleString();
+  document.getElementById('s-solar').textContent   = Math.round(sw).toString();
+  document.getElementById('s-consume').textContent = Math.round(cw).toString();
+  document.getElementById('s-grid').textContent    = Math.round(gw).toString();
+  setGridColor(gw);
+  setNeedle(sw);
+}
+async function poll() {
+  const [solar, consume, grid] = await Promise.all([getState(E_SOLAR), getState(E_CONSUME), getState(E_GRID)]);
+  if (solar===null && consume===null && grid===null) return;
+  render(parseFloat(solar)||0, parseFloat(consume)||0, parseFloat(grid)||0);
+}
+drawGauge();
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

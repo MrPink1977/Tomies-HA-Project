@@ -14,15 +14,19 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; }
-.pill { position:fixed; top:4px; right:6px; display:flex; align-items:center; gap:5px; padding:2px 8px; border:1px solid var(--border); background:rgba(15,18,21,0.85); font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:1px; z-index:50; }
+.tbar { height:28px; min-height:28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-bottom:1px solid rgba(0,255,136,0.28); background:linear-gradient(90deg,rgba(0,255,136,0.09),rgba(0,255,136,0.025)); }
+.tbar::before { content:''; width:3px; align-self:stretch; margin:5px 9px 5px 0; background:var(--green); box-shadow:0 0 10px rgba(0,255,136,0.48); }
+.tbar-title { margin-right:auto; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:3px; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); white-space:nowrap; }
+.tbar-title .tic { margin-right:6px; }
+.pill { display:inline-flex; align-items:center; gap:5px; padding:1px 7px; border:1px solid rgba(0,255,136,0.24); background:rgba(15,18,21,0.85); font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px; }
 .sdot { width:6px; height:6px; border-radius:50%; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .alert { background:rgba(255,68,68,0.12); border-bottom:1px solid rgba(255,68,68,0.3); padding:3px 14px; font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--red); letter-spacing:1px; display:none; }
 .alert.on { display:block; animation:afl 1s infinite; }
 @keyframes afl { 0%,100%{opacity:1} 50%{opacity:0.5} }
-.cols { display:grid; grid-template-columns:1fr 1fr; height:100vh; overflow:hidden; }
-.alert.on ~ .cols { height:calc(100vh - 28px); }
-.col { padding:6px 10px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:5px; overflow:hidden; }
+.cols { display:grid; grid-template-columns:1fr 1fr; height:calc(100vh - 28px); overflow:hidden; }
+.alert.on ~ .cols { height:calc(100vh - 56px); }
+.col { padding:4px 10px 6px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:4px; overflow:hidden; }
 .col:last-child { border-right:none; }
 .sec { display:flex; align-items:center; gap:6px; }
 .sec-lbl { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:3px; color:var(--green); white-space:nowrap; }
@@ -44,7 +48,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .sval.h-warn { color:var(--warn); }
 .sunit { font-family:'Rajdhani',sans-serif; font-size:11px; color:var(--text2); font-weight:500; }
 .sstatus { font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:1px; margin-top:2px; color:var(--text3); }
-.zlbl { font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--green); letter-spacing:2px; padding:1px 0; }
+.zlbl { font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--green); letter-spacing:2px; padding:0; }
 .pcard { background:var(--bg2); border:1px solid var(--border); padding:5px 8px; transition:all 0.3s; }
 .pcard.running { border-color:rgba(0,255,136,0.35); background:rgba(0,255,136,0.03); }
 .pcard.heating { border-color:rgba(255,107,53,0.35); background:rgba(255,107,53,0.03); }
@@ -71,7 +75,10 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 </style>
 </head>
 <body>
-<div class="pill"><div class="sdot" id="sdot" style="background:var(--text3)"></div><span id="slabel">CONNECTING</span></div>
+<div class="tbar">
+  <div class="tbar-title"><span class="tic">&#127807;</span>GREENHOUSE</div>
+  <div class="pill"><div class="sdot" id="sdot" style="background:var(--text3)"></div><span id="slabel">CONNECTING</span></div>
+</div>
 <div class="alert" id="alert">⚠ TEMP ALERT</div>
 <div class="cols">
   <div class="col">
@@ -110,12 +117,10 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
   </div>
   <div class="col">
     <div class="sec"><div class="sec-lbl">TENT 1 &amp; 2</div><div class="sec-line"></div><div class="sec-tag" id="tent-tag">CTR69P // --</div></div>
-    <div class="zlbl">TENT 1</div>
     <div class="srow">
       <div class="scard temp-ok" id="t1-tc"><div class="slbl">TEMPERATURE</div><div><span class="sval t-ok" id="t1-temp">--</span><span class="sunit">°F</span></div><div class="sstatus" id="t1-ts">--</div></div>
       <div class="scard humid-ok" id="t1-hc"><div class="slbl">HUMIDITY</div><div><span class="sval h-ok" id="t1-humid">--</span><span class="sunit">%</span></div><div class="sstatus" id="t1-hs">--</div></div>
     </div>
-    <div class="zlbl">TENT 2</div>
     <div class="srow">
       <div class="scard temp-ok" id="t2-tc"><div class="slbl">TEMPERATURE</div><div><span class="sval t-ok" id="t2-temp">--</span><span class="sunit">°F</span></div><div class="sstatus" id="t2-ts">--</div></div>
       <div class="scard humid-ok" id="t2-hc"><div class="slbl">HUMIDITY</div><div><span class="sval h-ok" id="t2-humid">--</span><span class="sunit">%</span></div><div class="sstatus" id="t2-hs">--</div></div>
@@ -151,8 +156,8 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 </div>
 <div class="rbar"><div class="rbar-fill" id="rfill"></div></div>
 <script>
-const HA_URL='http://localhost:8123';
-const HA_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q';
+const HA_URL=location.origin;
+const HA_TOKEN=getHaToken();
 const POLL_MS=15000;
 const E={
   gh_temp:'sensor.daniels_controller_temperature',
@@ -193,6 +198,7 @@ function setBar(barId,lblId,power,max=10){const bar=g(barId),lbl=g(lblId);if(!ba
 function startBar(){const f=g('rfill');f.style.transition='none';f.style.width='0%';setTimeout(()=>{f.style.transition=`width ${POLL_MS}ms linear`;f.style.width='100%';},50);}
 function setButtonMode(btnsId,mode,type){const wrap=g(btnsId);if(!wrap)return;wrap.querySelectorAll('.pbtn').forEach(b=>{b.className='pbtn';const t=b.textContent.toLowerCase();if(t==='on'&&mode==='On')b.className=type==='heat'?'pbtn a-heat':'pbtn a-on';if(t==='auto'&&mode==='Auto')b.className='pbtn a-auto';if(t==='off'&&mode==='Off')b.className='pbtn a-off';});}
 async function setMode(selectEntity,btnsId,option,type){setButtonMode(btnsId,option,type);try{await fetch(`${HA_URL}/api/services/select/select_option`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({entity_id:selectEntity,option})});}catch(e){console.warn('setMode failed',e);}setTimeout(poll,1500);}
+function getHaToken(){try{const raw=localStorage.getItem('hassTokens');return raw?JSON.parse(raw).access_token||'':'';}catch{return '';}}
 async function poll(){
   startBar();
   const S={};

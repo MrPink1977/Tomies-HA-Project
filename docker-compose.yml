@@ -27,7 +27,7 @@ services:
     environment:
       - TZ=America/New_York
       - HA_URL=http://homeassistant:8123
-      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
+      - HA_TOKEN=${HA_TOKEN}
       - MEDIA_PLAYER_ENTITY=media_player.home_assistant_voice_0a52fa_media_player
     networks:
       - ha_network
@@ -71,23 +71,6 @@ services:
     ports:
       - "10200:10200"
     command: --voice en_US-lessac-medium
-    restart: unless-stopped
-    environment:
-      - TZ=America/New_York
-    networks:
-      - ha_network
-    depends_on:
-      - mosquitto
-
-  wyoming-openwakeword:
-    container_name: wyoming-openwakeword
-    image: rhasspy/wyoming-openwakeword:latest
-    volumes:
-      - ./openwakeword_data:/data
-      - ./config/custom_wakewords:/custom
-    ports:
-      - "10400:10400"
-    command: --preload-model hey_freya --custom-model-dir /custom
     restart: unless-stopped
     environment:
       - TZ=America/New_York
@@ -226,13 +209,13 @@ services:
       - TZ=America/New_York
       - LDR_URL=http://local-deep-research:5000
       - LDR_USERNAME=admin
-      - LDR_PASSWORD=freyaresearch2026
+      - LDR_PASSWORD=${LDR_PASSWORD}
       - HA_URL=http://homeassistant:8123
-      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
-      - HA_WEBHOOK_ID=research_report_done
-      - GMAIL_USER=tomie.pearson@gmail.com
-      - GMAIL_APP_PASS=prrcwiwwwtkfsbsb
-      - GMAIL_TO=tomie.pearson@gmail.com
+      - HA_TOKEN=${HA_TOKEN}
+      - HA_WEBHOOK_ID=${HA_WEBHOOK_ID}
+      - GMAIL_USER=${GMAIL_USER}
+      - GMAIL_APP_PASS=${GMAIL_APP_PASS}
+      - GMAIL_TO=${GMAIL_TO}
       - CHROMADB_URL=http://chromadb:8000
       - OLLAMA_URL=http://ollama:11434
     networks:
@@ -278,8 +261,8 @@ services:
       - TZ=America/New_York
       - OLLAMA_BASE_URL=http://ollama:11434
       - OPENAI_API_BASE_URL=http://litellm:4000/v1
-      - OPENAI_API_KEY=freya-litellm-key
-      - WEBUI_SECRET_KEY=freyaopenwebui2026
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       - ENABLE_SIGNUP=false
       - DEFAULT_USER_ROLE=admin
       - WEBUI_NAME=Freya AI

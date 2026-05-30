@@ -1,0 +1,317 @@
+title: Kiosk
+button_card_templates:
+  base_tile:
+    show_icon: false
+    show_name: true
+    show_state: true
+    styles:
+      card:
+        - border-radius: 14px
+        - padding: 14px
+        - background: rgba(0,0,0,0.55)
+        - border: 1px solid rgba(255,255,255,0.10)
+        - box-shadow: 0 6px 22px rgba(0,0,0,0.35)
+      name:
+        - justify-self: start
+        - font-size: 14px
+        - font-weight: 600
+        - letter-spacing: 0.3px
+      state:
+        - justify-self: start
+        - font-size: 20px
+        - font-weight: 800
+        - margin-top: 2px
+      grid:
+        - grid-template-areas: '"n n" "s s" "meta meta"'
+        - grid-template-columns: 1fr 1fr
+        - grid-template-rows: auto auto auto
+  power_color:
+    styles:
+      card:
+        - background: |
+            [[[
+              const w = Number(entity.state || 0);
+              if (w >= 1500) return 'rgba(255, 59, 59, 0.18)';
+              if (w >= 700)  return 'rgba(255, 191, 32, 0.16)';
+              if (w >= 80)   return 'rgba(0, 255, 180, 0.12)';
+              return 'rgba(0, 0, 0, 0.55)';
+            ]]]
+        - border: |
+            [[[
+              const w = Number(entity.state || 0);
+              if (w >= 1500) return '1px solid rgba(255, 59, 59, 0.40)';
+              if (w >= 700)  return '1px solid rgba(255, 191, 32, 0.35)';
+              if (w >= 80)   return '1px solid rgba(0, 255, 180, 0.28)';
+              return '1px solid rgba(255,255,255,0.10)';
+            ]]]
+        - box-shadow: |
+            [[[
+              const w = Number(entity.state || 0);
+              if (w >= 1500) return '0 10px 26px rgba(255, 59, 59, 0.18)';
+              if (w >= 700)  return '0 10px 26px rgba(255, 191, 32, 0.16)';
+              if (w >= 80)   return '0 10px 26px rgba(0, 255, 180, 0.12)';
+              return '0 6px 22px rgba(0,0,0,0.35)';
+            ]]]
+  breaker_tile:
+    template:
+      - base_tile
+      - power_color
+    custom_fields:
+      meta: |
+        [[[
+          const v = states[variables.voltage_entity]?.state;
+          const a = states[variables.current_entity]?.state;
+          const vv = (v !== undefined && v !== 'unknown' && v !== 'unavailable') ? `${Number(v).toFixed(0)}V` : '--V';
+          const aa = (a !== undefined && a !== 'unknown' && a !== 'unavailable') ? `${Number(a).toFixed(1)}A` : '--A';
+          return `${vv}  •  ${aa}`;
+        ]]]
+    styles:
+      custom_fields:
+        meta:
+          - justify-self: start
+          - font-size: 12px
+          - opacity: 0.85
+          - margin-top: 6px
+  leg_tile:
+    template:
+      - base_tile
+      - power_color
+    styles:
+      name:
+        - font-size: 13px
+        - opacity: 0.9
+      state:
+        - font-size: 26px
+
+views:
+  - title: Power Center
+    path: power
+    icon: mdi:transmission-tower
+    type: panel
+    cards:
+      - type: vertical-stack
+        cards:
+
+          # ── LEG TOTALS ──────────────────────────────────────────
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:button-card
+                template: leg_tile
+                name: LEG A (SEM C) — Odd Breakers
+                entity: sensor.sem_c_active_power
+              - type: custom:button-card
+                template: leg_tile
+                name: LEG B (SEM B) — Even Breakers
+                entity: sensor.sem_b_active_power
+
+          # ── BREAKER GRID — matches physical panel layout ─────────
+          # Left column = odd breakers (Leg A / SEM C)
+          # Right column = even breakers (Leg B / SEM B)
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+
+              # B1 odd / CH16 — Garage Heater 240V pole 1
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B1  •  CH16 — Garage Heater (240V)"
+                entity: sensor.sem_ch16_garage_heater_3_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch16_garage_heater_3_voltage
+                  current_entity: sensor.sem_ch16_garage_heater_3_current
+
+              # B2 even / CH01 — Bedroom Minisplit single pole
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B2  •  CH01 — Bedroom Minisplit"
+                entity: sensor.sem_ch01_bdrm_minisplit_2_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch01_bdrm_minisplit_2_voltage
+                  current_entity: sensor.sem_ch01_bdrm_minisplit_2_current
+
+              # B3 odd / CH16 — Garage Heater 240V pole 2
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B3  •  CH16 — Garage Heater (240V)"
+                entity: sensor.sem_ch16_garage_heater_3_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch16_garage_heater_3_voltage
+                  current_entity: sensor.sem_ch16_garage_heater_3_current
+
+              # B4 even / BLANK
+              - type: custom:button-card
+                template: base_tile
+                name: "B4  •  BLANK"
+                entity: sensor.sem_ch01_bdrm_minisplit_2_active_power
+                show_state: false
+                styles:
+                  card:
+                    - opacity: 0.3
+
+              # B5 odd / CH15 — Bedroom Outlet North
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B5  •  CH15 — Bedroom Outlet N"
+                entity: sensor.sem_ch15_outlets_bdrm_n_light_bench_5_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch15_outlets_bdrm_n_light_bench_5_voltage
+                  current_entity: sensor.sem_ch15_outlets_bdrm_n_light_bench_5_current
+
+              # B6 even / CH02 — Tool Room Lights / Garage Door
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B6  •  CH02 — Tool Room / Garage Door"
+                entity: sensor.sem_ch02_toorlm_ceiling_dooropener_6_active_power_2
+                variables:
+                  voltage_entity: sensor.sem_ch02_toorlm_ceiling_dooropener_6_voltage_2
+                  current_entity: sensor.sem_ch02_toorlm_ceiling_dooropener_6_current_2
+
+              # B7 odd / CH14 — Kitchen Outlets
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B7  •  CH14 — Kitchen Outlets"
+                entity: sensor.sem_ch14_outlets_bedroom_bench_7_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch14_outlets_bedroom_bench_7_voltage
+                  current_entity: sensor.sem_ch14_outlets_bedroom_bench_7_current
+
+              # B8 even / CH03 — Dryer (240V pole 1)
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B8  •  CH03 — Dryer (240V)"
+                entity: sensor.sem_ch03_wash_dry_oven_10_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch03_wash_dry_oven_10_voltage
+                  current_entity: sensor.sem_ch03_wash_dry_oven_10_current
+
+              # B9 odd / CH13 — Main Lights
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B9  •  CH13 — Main Lights"
+                entity: sensor.sem_ch13_mainlights_9_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch13_mainlights_9_voltage
+                  current_entity: sensor.sem_ch13_mainlights_9_current
+
+              # B10 even / CH03 — Oven (240V pole 2 — shares CH03 with Dryer)
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B10  •  CH03 — Oven (240V)"
+                entity: sensor.sem_ch03_wash_dry_oven_10_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch03_wash_dry_oven_10_voltage
+                  current_entity: sensor.sem_ch03_wash_dry_oven_10_current
+
+              # B11 odd / CH12 — Septic Aerator
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B11  •  CH12 — Septic Aerator"
+                entity: sensor.sem_ch12_septic_aerator_11_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch12_septic_aerator_11_voltage
+                  current_entity: sensor.sem_ch12_septic_aerator_11_current
+
+              # B12 even / CH04 — Water Heater single pole
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B12  •  CH04 — Water Heater"
+                entity: sensor.sem_ch04_waterheater_12_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch04_waterheater_12_voltage
+                  current_entity: sensor.sem_ch04_waterheater_12_current
+
+              # B13 odd / CH11 — Outside West Outlet
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B13  •  CH11 — Outside W Outlet"
+                entity: sensor.sem_ch11_outlets_outside_west_13_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch11_outlets_outside_west_13_voltage
+                  current_entity: sensor.sem_ch11_outlets_outside_west_13_current
+
+              # B14 even / CH05 — Bedroom Outlets E,S
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B14  •  CH05 — Bedroom Outlets E,S"
+                entity: sensor.sem_ch05_outlets_bdrm_se_14_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch05_outlets_bdrm_se_14_voltage
+                  current_entity: sensor.sem_ch05_outlets_bdrm_se_14_current
+
+              # B15 odd / CH10 — GH Minisplit single pole
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B15  •  CH10 — GH Minisplit"
+                entity: sensor.sem_ch10_minisplit_grhouse_15_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch10_minisplit_grhouse_15_voltage
+                  current_entity: sensor.sem_ch10_minisplit_grhouse_15_current
+
+              # B16 even / CH06 — Tool Room Outlets
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B16  •  CH06 — Tool Room Outlets"
+                entity: sensor.sem_ch06_outlets_toolroom_16_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch06_outlets_toolroom_16_voltage
+                  current_entity: sensor.sem_ch06_outlets_toolroom_16_current
+
+              # B17 odd / BLANK
+              - type: custom:button-card
+                template: base_tile
+                name: "B17  •  BLANK"
+                entity: sensor.sem_ch09_outlets_grhouse_19_active_power
+                show_state: false
+                styles:
+                  card:
+                    - opacity: 0.3
+
+              # B18 even / CH07 — GH Outlets
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B18  •  CH07 — GH Outlets"
+                entity: sensor.sem_ch07_outlets_grhouse_18_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch07_outlets_grhouse_18_voltage
+                  current_entity: sensor.sem_ch07_outlets_grhouse_18_current
+
+              # B19 odd / CH09 — GH Outlet 2
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B19  •  CH09 — GH Outlet 2"
+                entity: sensor.sem_ch09_outlets_grhouse_19_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch09_outlets_grhouse_19_voltage
+                  current_entity: sensor.sem_ch09_outlets_grhouse_19_current
+
+              # B20 even / BLANK
+              - type: custom:button-card
+                template: base_tile
+                name: "B20  •  BLANK"
+                entity: sensor.sem_ch09_outlets_grhouse_19_active_power
+                show_state: false
+                styles:
+                  card:
+                    - opacity: 0.3
+
+              # B21 odd / BLANK
+              - type: custom:button-card
+                template: base_tile
+                name: "B21  •  BLANK"
+                entity: sensor.sem_ch09_outlets_grhouse_19_active_power
+                show_state: false
+                styles:
+                  card:
+                    - opacity: 0.3
+
+              # B22 even / CH08 — Porch Light
+              - type: custom:button-card
+                template: breaker_tile
+                name: "B22  •  CH08 — Porch Light"
+                entity: sensor.sem_ch08_porchlight_22_active_power
+                variables:
+                  voltage_entity: sensor.sem_ch08_porchlight_22_voltage
+                  current_entity: sensor.sem_ch08_porchlight_22_current

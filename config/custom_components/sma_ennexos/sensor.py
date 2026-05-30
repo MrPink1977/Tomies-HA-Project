@@ -112,12 +112,30 @@ class SMASensor(SMAEntity, SensorEntity):
         self.channel_id = channel_id
 
         # create entity id from device id and channel id
+        #
+        # NOTE: we do this although homeassistant doesn't really recommend it, because
+        # we want to persist the channel id (e.g. "Measurement.GridMs.Hz") in the entity id,
+        # and automatic id generation will not do that
+        # (instead deriving it from the display name, which becomes unhelpful fast)...
+        #
+        # NOTE: entity id is generated twice here, once for the actual - user facing - entity id,
+        # and a second one for uid generation.
+        # this is to ensure that, when updating to the new version of the integration, existing
+        # sensors are migrated over correctly and retain their history.
+        eid_kwargs = {
+            "component_name": component_info.name
+            if component_info is not None
+            else self.component_id,
+            "channel_id": channel_id,
+            "kind": "sensor",
+        }
         self.entity_id = channel_parts_to_entity_id(
-            component_info.name if component_info is not None else self.component_id,
-            channel_id,
-            "sensor",
+            **eid_kwargs, normalization="default"
         )
-        self._attr_unique_id = str(uuid.uuid5(uuid.NAMESPACE_X500, self.entity_id))
+        entity_id_for_uid = channel_parts_to_entity_id(
+            **eid_kwargs, normalization="old"
+        )
+        self._attr_unique_id = str(uuid.uuid5(uuid.NAMESPACE_X500, entity_id_for_uid))
 
         # super handles setting id and device_info for us
         super().__init__(
@@ -291,7 +309,8 @@ class SMASensor(SMAEntity, SensorEntity):
     def __channel_to_device_class_and_unit(
         self, channel_id: str, channel_unit: SMAUnit
     ) -> tuple[SensorDeviceClass | None, str | None]:
-        """SMAUnit to device_class and unit_of_measurement.
+        """
+        SMAUnit to device_class and unit_of_measurement.
 
         :return: (device_class, unit_of_measurement):
             device_class is None for where no device_class is available
@@ -327,6 +346,8 @@ class SMASensor(SMAEntity, SensorEntity):
             return (None, UnitOfTime.SECONDS)
         if channel_unit == SMAUnit.PERCENT:
             return (None, PERCENTAGE)
+        if channel_unit == SMAUnit.POWER_FACTOR:
+            return (SensorDeviceClass.POWER_FACTOR, None)
         if channel_unit == SMAUnit.ENUM:
             return (SensorDeviceClass.ENUM, None)
 
@@ -335,9 +356,8 @@ class SMASensor(SMAEntity, SensorEntity):
 
     def __cumulative_mode_to_state_class(
         self, cumulative_mode: SMACumulativeMode | None
-    ) -> str:
+    ) -> SensorStateClass:
         """SMACumulativeMode to SensorStateClass."""
-
         # counters only ever increase
         if cumulative_mode == SMACumulativeMode.COUNTER:
             return SensorStateClass.TOTAL_INCREASING
@@ -356,7 +376,6 @@ class SMASensor(SMAEntity, SensorEntity):
 
     def __unit_to_display_precision(self, unit: SMAUnit) -> int | None:
         """SMAUnit to display precision."""
-
         if (
             unit == SMAUnit.VOLT
             or unit == SMAUnit.AMPERE
@@ -373,7 +392,7 @@ class SMASensor(SMAEntity, SensorEntity):
             # display one decimal place
             return 1
 
-        if unit == SMAUnit.PERCENT:
+        if unit == SMAUnit.PERCENT or unit == SMAUnit.POWER_FACTOR:
             # display two decimal places
             return 2
 

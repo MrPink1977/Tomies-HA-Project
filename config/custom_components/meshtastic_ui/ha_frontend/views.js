@@ -163,6 +163,10 @@ export class MeshRadioTab extends LitElement {
       packetTypes: { type: Object },
       chartWindow: { type: Number },
       bucketInterval: { type: Number },
+      reconnecting: { type: Boolean },
+      radios: { type: Array },
+      selectedRadioId: { type: String },
+      radioUnread: { type: Object },
     };
   }
 
@@ -173,6 +177,10 @@ export class MeshRadioTab extends LitElement {
     this.packetTypes = null;
     this.chartWindow = 3600;
     this.bucketInterval = 10;
+    this.reconnecting = false;
+    this.radios = [];
+    this.selectedRadioId = null;
+    this.radioUnread = {};
   }
 
   static get styles() {
@@ -208,12 +216,84 @@ export class MeshRadioTab extends LitElement {
           background: #f44336;
           box-shadow: 0 0 6px rgba(244,67,54,0.4);
         }
-        .gateway-name { font-size: 16px; font-weight: 600; flex: 1; }
+        .gateway-name { font-size: 16px; font-weight: 600; flex: 0 1 auto; min-width: 0; }
+        .gateway-name-switcher {
+          appearance: none;
+          -webkit-appearance: none;
+          background: transparent;
+          border: none;
+          color: var(--primary-text-color);
+          font-size: 16px;
+          font-weight: 600;
+          font-family: inherit;
+          padding: 4px 24px 4px 0;
+          margin: 0;
+          cursor: pointer;
+          outline: none;
+          background-image: linear-gradient(45deg, transparent 50%, var(--secondary-text-color) 50%),
+                            linear-gradient(135deg, var(--secondary-text-color) 50%, transparent 50%);
+          background-position: calc(100% - 10px) center, calc(100% - 5px) center;
+          background-size: 5px 5px, 5px 5px;
+          background-repeat: no-repeat;
+          max-width: 100%;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .gateway-name-switcher:hover { color: var(--primary-color); }
+        .gateway-name-switcher:focus { outline: none; }
+        .gateway-name-wrap {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          flex: 0 1 auto;
+          min-width: 0;
+        }
+        .gateway-unread-dot {
+          position: absolute;
+          top: 4px;
+          right: 0;
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #f44336;
+          box-shadow: 0 0 4px rgba(244,67,54,0.6);
+          pointer-events: none;
+        }
         .gateway-meta {
           display: flex; gap: 16px;
           font-size: 13px; color: var(--secondary-text-color);
+          margin-left: 16px;
+          flex-shrink: 1;
+          min-width: 0;
+          overflow: hidden;
         }
-        .gateway-meta span { white-space: nowrap; }
+        .gateway-meta span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .reconnect-btn {
+          padding: 5px 12px;
+          border: 1px solid var(--divider-color);
+          border-radius: 8px;
+          background: var(--secondary-background-color);
+          color: var(--primary-text-color);
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+        .reconnect-btn:hover { opacity: 0.8; }
+        .reconnect-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .spinner {
+          display: inline-block; width: 12px; height: 12px;
+          border: 2px solid var(--divider-color);
+          border-top-color: var(--primary-color);
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .gateway-section { padding: 16px 20px; }
         .gateway-section + .gateway-section { border-top: 1px solid var(--divider-color); }
 
@@ -243,7 +323,28 @@ export class MeshRadioTab extends LitElement {
           margin-bottom: 4px;
           display: flex;
           align-items: center;
+          justify-content: space-between;
           gap: 12px;
+          flex-wrap: wrap;
+        }
+        .charts-heading-meta {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .refresh-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 3px 10px;
+          border-radius: 12px;
+          background: var(--secondary-background-color);
+          border: 1px solid var(--divider-color);
+          font-size: 11px;
+          font-weight: 600;
+          color: var(--secondary-text-color);
+          cursor: help;
+          white-space: nowrap;
         }
         .window-select {
           padding: 4px 8px;
@@ -284,18 +385,27 @@ export class MeshRadioTab extends LitElement {
     const bi = this.bucketInterval || 10;
     const pktUnit = bi >= 60 ? `pkts/${Math.round(bi / 60)}min` : `pkts/${bi}s`;
     const presetLabel = CHART_WINDOW_PRESETS.find((p) => p.value === this.chartWindow)?.label || "Custom";
+    // Use telemetry interval from the first connected gateway.
+    const tlmInterval = this.gateways.find((g) => g.telemetry_interval != null)?.telemetry_interval;
     return html`
       ${this.gateways.map((gw) => this._renderGatewayCard(gw))}
       ${ts ? html`
         <div class="charts-heading">
           <span>${presetLabel} Activity</span>
-          <select class="window-select"
-            .value=${String(this.chartWindow)}
-            @change=${this._onWindowChange}>
-            ${CHART_WINDOW_PRESETS.map((p) => html`
-              <option value=${p.value} ?selected=${p.value === this.chartWindow}>${p.label}</option>
-            `)}
-          </select>
+          <div class="charts-heading-meta">
+            ${tlmInterval != null ? html`
+              <span class="refresh-pill" title="Radio broadcasts device metrics on this interval. Change in Settings → Telemetry.">
+                ↻ ${this._formatInterval(tlmInterval)}
+              </span>
+            ` : ""}
+            <select class="window-select"
+              .value=${String(this.chartWindow)}
+              @change=${this._onWindowChange}>
+              ${CHART_WINDOW_PRESETS.map((p) => html`
+                <option value=${p.value} ?selected=${p.value === this.chartWindow}>${p.label}</option>
+              `)}
+            </select>
+          </div>
         </div>
         <div class="charts-section">
           <mesh-horizon-chart
@@ -356,22 +466,83 @@ export class MeshRadioTab extends LitElement {
     }));
   }
 
+  _formatInterval(secs) {
+    // 0 means "firmware default" — fw 2.7.x uses 3600s.
+    if (secs === 0) return "every 1h (fw default)";
+    if (secs < 60) return `every ${secs}s`;
+    if (secs < 3600) {
+      const minutes = Math.round(secs / 60);
+      return `every ${minutes} min`;
+    }
+    const hours = secs / 3600;
+    return hours === Math.floor(hours)
+      ? `every ${hours}h`
+      : `every ${hours.toFixed(1)}h`;
+  }
+
+  _handleReconnect() {
+    this.dispatchEvent(new CustomEvent("reconnect", { bubbles: true, composed: true }));
+  }
+
+  _onRadioSwitch(radioId) {
+    if (!radioId || radioId === this.selectedRadioId) return;
+    this.dispatchEvent(new CustomEvent("switch-radio", {
+      detail: { radio_id: radioId },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+
   _renderGatewayCard(gw) {
     const isConnected = gw.state?.toLowerCase() === "connected" || gw.state?.toLowerCase() === "on";
     const sensors = gw.sensors || {};
     const channels = gw.channels || [];
 
+    const multipleRadios = (this.radios || []).length > 1;
+    // Red dot when at least one *other* radio has unseen messages.
+    const otherUnread = Object.entries(this.radioUnread || {}).some(
+      ([rid, count]) => rid !== this.selectedRadioId && count > 0
+    );
     return html`
       <div class="gateway-card">
         <div class="gateway-card-header">
           <div class="status-dot ${isConnected ? "connected" : "disconnected"}"></div>
-          <div class="gateway-name">${gw.name}</div>
+          ${multipleRadios ? html`
+            <div class="gateway-name-wrap">
+              <select class="gateway-name-switcher"
+                .value=${this.selectedRadioId || ""}
+                @change=${(e) => this._onRadioSwitch(e.target.value)}
+                title="Switch active radio"
+              >
+                ${this.radios.map((r) => {
+                  const unread = this.radioUnread?.[r.radio_id] || 0;
+                  const dot = (unread > 0 && r.radio_id !== this.selectedRadioId) ? " •" : "";
+                  return html`
+                    <option value=${r.radio_id} ?selected=${r.radio_id === this.selectedRadioId}>
+                      ${r.name || r.title || "Meshtastic Radio"}${r.last4 ? ` (${r.last4})` : ""}${dot}
+                    </option>
+                  `;
+                })}
+              </select>
+              ${otherUnread ? html`<span class="gateway-unread-dot" title="Another radio has new messages"></span>` : ""}
+            </div>
+          ` : html`<div class="gateway-name">${gw.name}</div>`}
           <div class="gateway-meta">
             ${gw.model ? html`<span>${gw.model}</span>` : ""}
             ${gw.firmware ? html`<span>v${gw.firmware}</span>` : ""}
             ${gw.serial ? html`<span>${gw.serial}</span>` : ""}
             ${sensors.uptime ? html`<span>Up ${formatUptime(sensors.uptime)}</span>` : ""}
           </div>
+          <button
+            class="reconnect-btn"
+            ?disabled=${this.reconnecting}
+            @click=${this._handleReconnect}
+            title="Force reconnect to radio"
+          >
+            ${this.reconnecting
+              ? html`<span class="spinner"></span> Reconnecting…`
+              : html`↺ Reconnect`}
+          </button>
         </div>
 
         <div class="gateway-section">
@@ -436,6 +607,7 @@ export class MeshMessagesTab extends LitElement {
       nodes: { type: Object },
       unreadCounts: { type: Object },
       _replyTo: { type: Object },
+      _pendingClear: { type: Object, state: true },
     };
   }
 
@@ -453,6 +625,7 @@ export class MeshMessagesTab extends LitElement {
     this._replyTo = null;
     this._longPressTimer = null;
     this._longPressTarget = null;
+    this._pendingClear = null;
   }
 
   static get styles() {
@@ -575,7 +748,27 @@ export class MeshMessagesTab extends LitElement {
           line-height: 1;
         }
         .conversation-item.active .conv-badge { background: rgba(255,255,255,0.3); }
-        .conversation-item { display: flex; align-items: center; }
+        .conversation-item { display: flex; align-items: center; gap: 6px; }
+        .conv-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .conv-clear {
+          flex-shrink: 0;
+          opacity: 0;
+          background: transparent;
+          border: none;
+          padding: 2px;
+          color: inherit;
+          cursor: pointer;
+          border-radius: 4px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .conv-clear ha-icon { --mdc-icon-size: 16px; }
+        .conversation-item:hover .conv-clear { opacity: 0.6; }
+        .conv-clear:hover { opacity: 1 !important; background: rgba(244,67,54,0.15); color: #f44336; }
+        @media (hover: none) {
+          .conv-clear { opacity: 0.5; }
+        }
 
         /* Reply UI */
         .chat-bubble-wrapper {
@@ -675,6 +868,19 @@ export class MeshMessagesTab extends LitElement {
         .chat-bubble-wrapper.unread .chat-bubble.incoming {
           border-left: 3px solid var(--primary-color);
         }
+        .unread-divider {
+          display: flex; align-items: center; gap: 10px;
+          margin: 12px 0 8px; align-self: stretch;
+        }
+        .unread-divider::before, .unread-divider::after {
+          content: ""; flex: 1;
+          border-top: 1px solid var(--primary-color);
+          opacity: 0.5;
+        }
+        .unread-divider span {
+          font-size: 11px; font-weight: 600; text-transform: uppercase;
+          letter-spacing: 0.5px; color: var(--primary-color);
+        }
 
         @media (hover: none) {
           .bubble-actions { display: none !important; }
@@ -706,7 +912,18 @@ export class MeshMessagesTab extends LitElement {
     if (changedProps.has("messages") || changedProps.has("selectedConversation")) {
       this.updateComplete.then(() => {
         const el = this.shadowRoot?.querySelector(".chat-messages");
-        if (el) el.scrollTop = el.scrollHeight;
+        if (!el) return;
+        // When switching conversations, jump to the first unread bubble so
+        // users land on the boundary between read and unread, not at the
+        // bottom (#28). Falls back to bottom if there's nothing unread.
+        if (changedProps.has("selectedConversation")) {
+          const firstUnread = el.querySelector(".chat-bubble-wrapper.unread");
+          if (firstUnread) {
+            firstUnread.scrollIntoView({ block: "start" });
+            return;
+          }
+        }
+        el.scrollTop = el.scrollHeight;
       });
     }
   }
@@ -726,11 +943,22 @@ export class MeshMessagesTab extends LitElement {
           <div class="conversation-header">Channels</div>
           ${defaultChannels.map((ch) => {
             const badge = this.unreadCounts?.[ch] || 0;
+            const label = this.channelNames?.[ch] || (ch === "0" ? "Primary" : `Channel ${ch}`);
+            const hasMessages = (this.messages[ch]?.length || 0) > 0;
             return html`
               <div
                 class="conversation-item ${selected === ch ? "active" : ""}"
                 @click=${() => this._selectConversation(ch)}
-              >${this.channelNames?.[ch] || (ch === "0" ? "Primary" : `Channel ${ch}`)}${badge > 0 ? html`<span class="conv-badge">${badge}</span>` : ""}</div>
+              >
+                <span class="conv-name">${label}</span>
+                ${badge > 0 ? html`<span class="conv-badge">${badge}</span>` : ""}
+                ${hasMessages ? html`
+                  <button class="conv-clear" title="Clear messages in this channel"
+                    @click=${(e) => this._requestClear(e, ch, label)}>
+                    <ha-icon icon="mdi:trash-can-outline"></ha-icon>
+                  </button>
+                ` : ""}
+              </div>
             `;
           })}
           ${this.dms.length ? html`
@@ -742,7 +970,14 @@ export class MeshMessagesTab extends LitElement {
                 <div
                   class="conversation-item ${selected === dm ? "active" : ""}"
                   @click=${() => this._selectConversation(dm)}
-                >${name}${badge > 0 ? html`<span class="conv-badge">${badge}</span>` : ""}</div>
+                >
+                  <span class="conv-name">${name}</span>
+                  ${badge > 0 ? html`<span class="conv-badge">${badge}</span>` : ""}
+                  <button class="conv-clear" title="Delete this conversation"
+                    @click=${(e) => this._requestClear(e, dm, name)}>
+                    <ha-icon icon="mdi:trash-can-outline"></ha-icon>
+                  </button>
+                </div>
               `;
             })}
           ` : ""}
@@ -757,6 +992,7 @@ export class MeshMessagesTab extends LitElement {
               const msgId = msg.message_id;
               const hasActions = msgId != null;
               const isUnread = !isOutgoing && unreadStartIdx >= 0 && i >= unreadStartIdx;
+              const showUnreadDivider = unreadStartIdx >= 0 && i === unreadStartIdx;
               const showDateSep = i === 0 || !isSameDay(currentMessages[i - 1].timestamp, msg.timestamp);
               // Look up quoted reply
               let quotedMsg = null;
@@ -765,6 +1001,9 @@ export class MeshMessagesTab extends LitElement {
               }
               return html`
                 ${showDateSep ? html`<div class="date-separator">${formatDateLabel(msg.timestamp)}</div>` : ""}
+                ${showUnreadDivider ? html`
+                  <div class="unread-divider"><span>${unreadCount} new message${unreadCount !== 1 ? "s" : ""}</span></div>
+                ` : ""}
                 <div class="chat-bubble-wrapper ${isOutgoing ? "outgoing" : "incoming"} ${isUnread ? "unread" : ""}"
                   @touchstart=${hasActions ? (e) => this._onTouchStart(e, msgId) : null}
                   @touchend=${hasActions ? () => this._onTouchEnd() : null}
@@ -829,6 +1068,16 @@ export class MeshMessagesTab extends LitElement {
           </div>
         </div>
       </div>
+
+      <mesh-confirm-dialog
+        .open=${this._pendingClear != null}
+        title="Clear conversation"
+        .message=${this._pendingClear ? `Delete all messages in "${this._pendingClear.label}"? This action cannot be undone.` : ""}
+        confirmLabel="Clear"
+        .danger=${true}
+        @confirm=${this._confirmClear}
+        @cancel=${() => { this._pendingClear = null; }}
+      ></mesh-confirm-dialog>
     `;
   }
 
@@ -836,6 +1085,22 @@ export class MeshMessagesTab extends LitElement {
     this.dispatchEvent(
       new CustomEvent("select-conversation", { detail: { conversation: conv }, bubbles: true, composed: true })
     );
+  }
+
+  _requestClear(e, conv, label) {
+    e.stopPropagation();  // don't also select the conversation
+    this._pendingClear = { conv, label };
+  }
+
+  _confirmClear() {
+    const pending = this._pendingClear;
+    this._pendingClear = null;
+    if (!pending) return;
+    this.dispatchEvent(new CustomEvent("clear-conversation", {
+      detail: { conversation: pending.conv },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   _onKeydown(e) {
@@ -1579,9 +1844,16 @@ export class MeshMapTab extends LitElement {
     this._userLocationMarker = null;
     this._userLocationCircle = null;
     this._tileLayer = null;
-    // Dark mode: check localStorage override, else follow HA theme.
-    const stored = localStorage.getItem("meshtastic_map_dark");
-    this._darkMap = stored != null ? stored === "true" : this._detectDarkTheme();
+    // Tile style: "light" | "dark" | "satellite". Migrate legacy dark bool
+    // (meshtastic_map_dark) to the new key on first load, else follow HA theme.
+    const storedStyle = localStorage.getItem("meshtastic_map_style");
+    if (storedStyle === "light" || storedStyle === "dark" || storedStyle === "satellite") {
+      this._mapStyle = storedStyle;
+    } else {
+      const legacyDark = localStorage.getItem("meshtastic_map_dark");
+      const dark = legacyDark != null ? legacyDark === "true" : this._detectDarkTheme();
+      this._mapStyle = dark ? "dark" : "light";
+    }
   }
 
   _detectDarkTheme() {
@@ -1859,9 +2131,17 @@ export class MeshMapTab extends LitElement {
           <button class="locate-btn" @click=${() => this._locateUser()} title="Find my location">
             \u25CE Locate
           </button>
-          <button class="layer-btn ${this._darkMap ? "active" : ""}"
-            @click=${() => this._toggleDarkMap()} title="Toggle dark map tiles">
+          <button class="layer-btn ${this._mapStyle === "light" ? "active" : ""}"
+            @click=${() => this._setMapStyle("light")} title="Light map">
+            \u2600 Light
+          </button>
+          <button class="layer-btn ${this._mapStyle === "dark" ? "active" : ""}"
+            @click=${() => this._setMapStyle("dark")} title="Dark map">
             \u263D Dark
+          </button>
+          <button class="layer-btn ${this._mapStyle === "satellite" ? "active" : ""}"
+            @click=${() => this._setMapStyle("satellite")} title="Satellite imagery">
+            \u{1F30D} Satellite
           </button>
         </div>
         ${nodesWithout > 0 ? html`
@@ -1998,23 +2278,35 @@ export class MeshMapTab extends LitElement {
     this._waypointDialog = null;
   }
 
-  _createTileLayer(dark) {
+  _createTileLayer(style) {
+    if (style === "satellite") {
+      return L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {
+          attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community',
+          maxZoom: 19,
+          noWrap: true,
+        }
+      );
+    }
     const lightUrl = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
     const darkUrl = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
     const attr = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>';
-    return L.tileLayer(dark ? darkUrl : lightUrl, {
+    return L.tileLayer(style === "dark" ? darkUrl : lightUrl, {
       attribution: attr,
       maxZoom: 19,
       noWrap: true,
     });
   }
 
-  _toggleDarkMap() {
-    this._darkMap = !this._darkMap;
-    localStorage.setItem("meshtastic_map_dark", String(this._darkMap));
+  _setMapStyle(style) {
+    if (style !== "light" && style !== "dark" && style !== "satellite") return;
+    if (style === this._mapStyle) return;
+    this._mapStyle = style;
+    localStorage.setItem("meshtastic_map_style", style);
     if (this._mapInstance && this._tileLayer) {
       this._mapInstance.removeLayer(this._tileLayer);
-      this._tileLayer = this._createTileLayer(this._darkMap).addTo(this._mapInstance);
+      this._tileLayer = this._createTileLayer(this._mapStyle).addTo(this._mapInstance);
     }
     this.requestUpdate();
   }
@@ -2114,7 +2406,7 @@ export class MeshMapTab extends LitElement {
       maxBoundsViscosity: 1.0,
     }).setView(initCenter, initZoom);
 
-    this._tileLayer = this._createTileLayer(this._darkMap).addTo(map);
+    this._tileLayer = this._createTileLayer(this._mapStyle).addTo(map);
 
     // Persist position and zoom on every move.
     map.on("moveend", () => {

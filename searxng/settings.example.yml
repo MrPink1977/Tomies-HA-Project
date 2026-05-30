@@ -1,0 +1,56 @@
+# Copy to searxng/settings.yml for local use.
+# The live settings.yml file is ignored because it contains a local secret key.
+
+use_default_settings: true
+
+general:
+  debug: false
+  instance_name: "Freya Research"
+
+server:
+  secret_key: "replace-with-local-random-secret"
+  bind_address: "0.0.0.0:8080"
+  limiter: false
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  formats:
+    - html
+    - json
+
+ui:
+  static_use_hash: true
+  default_theme: simple
+  query_in_title: true
+
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    weight: 2
+  - name: bing
+    engine: bing
+    shortcut: bi
+    weight: 1
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    weight: 2
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    weight: 1
+  - name: github
+    engine: github
+    shortcut: gh
+    weight: 1
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: so
+    weight: 1
+  - name: reddit
+    engine: reddit
+    shortcut: re
+    weight: 0.5
