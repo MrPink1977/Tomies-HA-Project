@@ -6,20 +6,22 @@ Current working reference for the local FBIVAN / Freya Home Assistant stack.
 
 The local stack is defined in `docker-compose.yml`.
 
-- `homeassistant` - Home Assistant Core on port `8123`
-- `freya-visualizer` - local visualizer bridge
-- `mosquitto` - MQTT broker
-- `wyoming-whisper` - speech-to-text
-- `wyoming-piper` - text-to-speech
-- `ollama` - local LLM runtime with GPU access
-- `chromadb` - vector database
-- `esphome` - ESPHome builder/dashboard
-- `aircon` - AC Infinity bridge
-- `searxng` - local search backend
-- `local-deep-research` - research/report service
-- `research-bridge` - Home Assistant bridge for research jobs
-- `litellm` - model routing proxy
-- `open-webui` - AI chat UI
+| Service | Purpose | Published Port |
+| --- | --- | --- |
+| `homeassistant` | Home Assistant Core | `8123` |
+| `freya-visualizer` | Local visualizer bridge | `8765` |
+| `mosquitto` | MQTT broker | `1883` |
+| `wyoming-whisper` | Speech-to-text | `10300` |
+| `wyoming-piper` | Text-to-speech | `10200` |
+| `ollama` | Local LLM runtime with GPU access | `11434` |
+| `chromadb` | Vector database | `8000` |
+| `esphome` | ESPHome builder/dashboard | `6052` |
+| `aircon` | AC Infinity / aircon bridge | `8080` |
+| `searxng` | Local search backend | `8088` |
+| `local-deep-research` | Research/report service | `5000` |
+| `research-bridge` | Home Assistant bridge for research jobs | `8099` |
+| `litellm` | Model routing proxy | `4000` |
+| `open-webui` | AI chat UI | `3000` |
 
 OpenWakeWord and the old custom wake-word training files were removed. Voice and wake behavior should be rebuilt from a clean design later.
 
@@ -39,6 +41,8 @@ Local secrets stay outside Git:
 - `.env`
 - `config/secrets.yaml`
 - `esphome/secrets.yaml`
+
+Docker Compose reads service tokens and passwords from `.env`. Home Assistant YAML reads local values from `config/secrets.yaml`, and ESPHome reads device secrets from `esphome/secrets.yaml`.
 
 ## Dashboards
 
