@@ -238,7 +238,7 @@ const CONTROL_PORTS={
 const g=id=>document.getElementById(id);
 const fv=v=>parseFloat(v);
 const f1=v=>{const n=fv(v);return isNaN(n)?'--':n.toFixed(1);};
-async function getSt(id){try{const r=await fetch(`${HA_URL}/api/states/${id}`,{headers:{Authorization:`Bearer ${HA_TOKEN}`}});return r.ok?(await r.json()).state:null;}catch{return null;}}
+async function getSt(id){if(!HA_TOKEN)return null;try{const r=await fetch(`${HA_URL}/api/states/${id}`,{headers:{Authorization:`Bearer ${HA_TOKEN}`}});return r.ok?(await r.json()).state:null;}catch{return null;}}
 function tCardClass(t){return isNaN(t)?'scard temp-ok':t>=80?'scard temp-hot':t>=75?'scard temp-warm':'scard temp-ok';}
 function tValClass(t){return isNaN(t)?'sval t-ok':t>=80?'sval t-hot':t>=75?'sval t-warm':'sval t-ok';}
 function tSt(t){if(isNaN(t))return'--';if(t>=80)return'▲ HIGH';if(t>=75)return'▲ WARM';if(t<=55)return'▼ COLD';return'NOMINAL';}
@@ -249,7 +249,7 @@ function isOn(status,state){return state==='on';}
 function setBar(barId,lblId,power,max=10){const bar=g(barId),lbl=g(lblId);if(!bar||!lbl)return;const n=fv(power);bar.style.width=isNaN(n)?'0%':Math.min(100,(n/max)*100)+'%';lbl.textContent=isNaN(n)?'--':n;}
 function startBar(){const f=g('rfill');f.style.transition='none';f.style.width='0%';setTimeout(()=>{f.style.transition=`width ${POLL_MS}ms linear`;f.style.width='100%';},50);}
 function setButtonMode(btnsId,mode,type){const wrap=g(btnsId);if(!wrap)return;wrap.querySelectorAll('.pbtn').forEach(b=>{b.className='pbtn';const t=b.textContent.toLowerCase();if(t==='on'&&mode==='On')b.className=type==='heat'?'pbtn a-heat':'pbtn a-on';if(t==='auto'&&mode==='Auto')b.className='pbtn a-auto';if(t==='off'&&mode==='Off')b.className='pbtn a-off';});}
-async function setMode(selectEntity,btnsId,option,type){setButtonMode(btnsId,option,type);try{await fetch(`${HA_URL}/api/services/select/select_option`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({entity_id:selectEntity,option})});}catch(e){console.warn('setMode failed',e);}setTimeout(poll,1500);}
+async function setMode(selectEntity,btnsId,option,type){setButtonMode(btnsId,option,type);if(!HA_TOKEN)return;try{await fetch(`${HA_URL}/api/services/select/select_option`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({entity_id:selectEntity,option})});}catch(e){console.warn('setMode failed',e);}setTimeout(poll,1500);}
 function renderControls(){
   document.querySelectorAll('[data-control]').forEach(el=>{
     const key=el.dataset.control;
@@ -277,7 +277,7 @@ function setCtlText(id,value,unit){const el=g(id);if(!el)return;const n=fv(value
 function setSwitchText(key,field,state){const label=g(`${key}-${field}`),btn=g(`${key}-${field}-btn`),box=g(`${key}-${field}-box`);const on=state==='on';if(label)label.textContent=on?'ON':'OFF';if(btn){btn.textContent=on?'ON':'OFF';btn.className=on?'cbtn swbtn on':'cbtn swbtn';}if(box)box.className=on?'ctlbox on':'ctlbox';}
 async function bumpNumber(key,field,delta){const cfg=CONTROL_PORTS[key];if(!cfg)return;const entity=cfg[field];const current=await getSt(entity);let next=fv(current);if(isNaN(next))next=0;next+=delta;if(next<0)next=0;await callService('number','set_value',{entity_id:entity,value:next});setTimeout(poll,500);}
 async function toggleSwitch(key,field){const cfg=CONTROL_PORTS[key];if(!cfg)return;const entity=cfg[field];const current=await getSt(entity);await callService('switch',current==='on'?'turn_off':'turn_on',{entity_id:entity});setTimeout(poll,500);}
-async function callService(domain,service,data){try{await fetch(`${HA_URL}/api/services/${domain}/${service}`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){console.warn('service failed',domain,service,e);}}
+async function callService(domain,service,data){if(!HA_TOKEN)return;try{await fetch(`${HA_URL}/api/services/${domain}/${service}`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){console.warn('service failed',domain,service,e);}}
 function getHaToken(){try{const raw=localStorage.getItem('hassTokens');return raw?JSON.parse(raw).access_token||'':'';}catch{return '';}}
 async function poll(){
   startBar();

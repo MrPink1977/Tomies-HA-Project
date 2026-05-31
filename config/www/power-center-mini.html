@@ -104,6 +104,7 @@ function buildPanel() {
 }
 function wClass(w) { return w>=1500?'high':w>=700?'med':w>=80?'low':'idle'; }
 async function getState(e) {
+  if (!TOK) return null;
   try { const r=await fetch(`${HA}/api/states/${e}`,{headers:{Authorization:`Bearer ${TOK}`},cache:'no-store'});return r.ok?(await r.json()).state:null; } catch { return null; }
 }
 function startBar() {

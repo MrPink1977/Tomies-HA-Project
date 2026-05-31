@@ -141,6 +141,7 @@ function setGridColor(w) {
   el.style.textShadow = w > 0 ? '0 0 14px rgba(239,68,59,0.28)' : '0 0 14px rgba(46,255,120,0.23)';
 }
 async function getState(e) {
+  if (!HA_TOKEN) return null;
   try {
     const r = await fetch(`${HA_URL}/api/states/${e}`, { headers:{ Authorization:`Bearer ${HA_TOKEN}` }, cache:'no-store' });
     return r.ok ? (await r.json()).state : null;
