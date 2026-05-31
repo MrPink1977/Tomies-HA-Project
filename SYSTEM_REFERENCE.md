@@ -37,6 +37,7 @@ Important files:
 - `config/custom_components/`
 - `AC_INFINITY_USEFUL_ENTITIES.md`
 - `DASHBOARD_ENTITY_AUDIT.md`
+- `requirements-freya-telemetry.txt`
 
 Local secrets stay outside Git:
 
@@ -68,6 +69,35 @@ Mini and expanded dashboard pages:
 - `config/www/power-center-mini.html`
 - `config/www/greenhouse-dashboard.html`
 - `config/www/weather-dashboard.html`
+
+## Freya System Telemetry
+
+Freya's GPU/CPU/RAM panel reads these Home Assistant entities:
+
+- `sensor.gpu_utilization`
+- `sensor.gpu_temperature`
+- `sensor.gpu_vram_used`
+- `sensor.gpu_vram_total`
+- `sensor.gpu_vram_percent`
+- `sensor.host_cpu_percent`
+- `sensor.host_ram_used`
+- `sensor.host_ram_percent`
+
+The Home Assistant MQTT sensors are defined in:
+
+- `config/packages/freya_system_telemetry.yaml`
+
+The local publisher is:
+
+- `freya_gpu_stats.py`
+
+Install/update its local Python dependencies with:
+
+```powershell
+pip install -r requirements-freya-telemetry.txt
+```
+
+The publisher reads `.env` when present. MQTT defaults to `localhost:1883`; set `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME`, and `MQTT_PASSWORD` only when needed. `HA_TOKEN` is optional and only enables the legacy REST state push fallback.
 
 ## ESPHome
 

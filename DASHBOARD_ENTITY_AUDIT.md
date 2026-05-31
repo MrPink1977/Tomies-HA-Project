@@ -13,18 +13,23 @@ Last checked: 2026-05-31
 ## Notes
 
 - The command grid MQTT dot uses `sensor.sem_b_active_power` as the real MQTT-backed signal. There is no `binary_sensor.mqtt_status` entity in the current Home Assistant entity registry.
-- The Freya panel has generic system sensor names first and FBIVAN fallbacks second where available:
-  - GPU load: `sensor.gpu_utilization`, fallback `sensor.fbivan_gpuload`
-  - GPU temperature: `sensor.gpu_temperature`, fallback `sensor.fbivan_gputemperature`
-  - CPU load: `sensor.host_cpu_percent`, fallback `sensor.fbivan_cpuload`
-  - RAM percent: `sensor.host_ram_percent`, fallback `sensor.fbivan_memoryusage`
-- Freya also references VRAM and RAM detail sensors that may be runtime-created or MQTT-created outside the registry snapshot:
+- The Freya panel uses clean system telemetry entities defined in `config/packages/freya_system_telemetry.yaml` and fed by `freya_gpu_stats.py`:
+  - `sensor.gpu_utilization`
+  - `sensor.gpu_temperature`
   - `sensor.gpu_vram_used`
   - `sensor.gpu_vram_total`
   - `sensor.gpu_vram_percent`
+  - `sensor.host_cpu_percent`
   - `sensor.host_ram_used`
+  - `sensor.host_ram_percent`
+- Freya keeps old FBIVAN fallbacks where they already exist:
+  - GPU load fallback: `sensor.fbivan_gpuload`
+  - GPU temperature fallback: `sensor.fbivan_gputemperature`
+  - CPU load fallback: `sensor.fbivan_cpuload`
+  - RAM percent fallback: `sensor.fbivan_memoryusage`
 
 ## Next Cleanup Targets
 
-- Decide whether to formalize the Freya system telemetry sensors in Home Assistant YAML/MQTT discovery so they appear cleanly in the registry.
+- Restart Home Assistant after telemetry package changes so the MQTT package sensors are registered.
+- Run `freya_gpu_stats.py` with MQTT access so the telemetry topics update with retained values.
 - Keep the dashboard pages pointed at entity constants instead of scattering entity IDs through rendering code.

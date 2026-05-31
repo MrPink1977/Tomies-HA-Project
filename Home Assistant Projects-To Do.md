@@ -12,7 +12,7 @@
 
 - Rebuild the voice and wake flow cleanly later.
 - Keep text-to-speech and assistant transcript ideas separate from the old wake-word experiment.
-- Improve live assistant status with real data from Home Assistant, Ollama, and system telemetry.
+- Improve live assistant status with real data from Home Assistant, Ollama, and system telemetry. GPU/CPU/RAM telemetry is now defined in `config/packages/freya_system_telemetry.yaml`; keep refining the assistant/activity signals.
 
 ### Solar / Power
 
@@ -37,5 +37,6 @@
 
 - Keep `SYSTEM_REFERENCE.md` updated when services, dashboards, or entity names change.
 - Keep `DASHBOARD_ENTITY_AUDIT.md` updated when dashboard entity wiring changes.
+- Keep `requirements-freya-telemetry.txt` aligned with `freya_gpu_stats.py`.
 - Keep secrets in `.env`, `config/secrets.yaml`, or `esphome/secrets.yaml`, never in committed files.
 - Before big changes, validate with `docker compose config --quiet`.
