@@ -36,12 +36,14 @@ Important files:
 - `config/dashboards/`
 - `config/custom_components/`
 - `AC_INFINITY_USEFUL_ENTITIES.md`
+- `DASHBOARD_ENTITY_AUDIT.md`
 
 Local secrets stay outside Git:
 
 - `.env`
 - `config/secrets.yaml`
 - `esphome/secrets.yaml`
+- `config/www/ha-grid/local-camera.js`
 
 Docker Compose reads service tokens and passwords from `.env`. Home Assistant YAML reads local values from `config/secrets.yaml`, and ESPHome reads device secrets from `esphome/secrets.yaml`.
 
@@ -90,6 +92,7 @@ Dashboard sanity checks:
 - Open `http://localhost:8123/local/ha-grid.html`
 - Open `http://localhost:8123/local/freya-panel.html`
 - Check browser console for module or runtime errors
+- Check `DASHBOARD_ENTITY_AUDIT.md` when dashboard entity wiring changes
 
 ## Cleanup Notes
 

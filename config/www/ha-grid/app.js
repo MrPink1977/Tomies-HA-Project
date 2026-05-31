@@ -46,6 +46,7 @@ function boot() {
   window.setInterval(updateClock, 1000);
   window.setTimeout(hideAllLoaders, appConfig.loaderTimeoutMs);
   wireHomeAssistantStatus();
+  wireSystemStatus();
   context.ha.start().catch(error => {
     console.warn(error);
     setStatusDot("ha", "off");
@@ -128,6 +129,68 @@ function wireHomeAssistantStatus() {
       setStatusDot("ha", event.detail.online ? "on" : "off");
     }
   });
+}
+
+function wireSystemStatus() {
+  refreshConfiguredStatuses();
+  refreshOllamaStatus();
+  window.setInterval(refreshOllamaStatus, 15000);
+
+  context.ha.addEventListener("states-loaded", refreshConfiguredStatuses);
+  context.ha.addEventListener("state-changed", event => {
+    const entityId = event.detail.entity_id;
+    for (const item of appConfig.statusItems) {
+      if (item.entity === entityId || (item.kind === "camera" && appConfig.cameraEntities.includes(entityId))) {
+        refreshStatusItem(item);
+      }
+    }
+  });
+}
+
+function refreshConfiguredStatuses() {
+  for (const item of appConfig.statusItems) {
+    refreshStatusItem(item);
+  }
+}
+
+function refreshStatusItem(item) {
+  if (item.kind === "ha") return;
+  if (item.kind === "ollama") {
+    refreshOllamaStatus();
+    return;
+  }
+  if (item.kind === "camera") {
+    setStatusDot(item.id, hasCameraSignal() ? "on" : "off");
+    return;
+  }
+  if (item.entity) {
+    setStatusDot(item.id, isUsableState(context.ha.getState(item.entity)) ? "on" : "off");
+  }
+}
+
+function hasCameraSignal() {
+  if (context.localCameraSnapshotUrl || window.localStorage.getItem(appConfig.cameraSnapshotStorageKey)) return true;
+  return appConfig.cameraEntities.some(entityId => {
+    const state = context.ha.getState(entityId);
+    return isUsableState(state) && Boolean(state.attributes?.entity_picture);
+  });
+}
+
+async function refreshOllamaStatus() {
+  const item = appConfig.statusItems.find(statusItem => statusItem.kind === "ollama");
+  if (!item) return;
+
+  try {
+    const host = window.location.hostname || "localhost";
+    const response = await fetch(`http://${host}:11434/api/version`, { cache: "no-store" });
+    setStatusDot(item.id, response.ok ? "on" : "warn");
+  } catch {
+    setStatusDot(item.id, "off");
+  }
+}
+
+function isUsableState(state) {
+  return Boolean(state) && !["unknown", "unavailable", "none"].includes(String(state.state).toLowerCase());
 }
 
 function setStatusDot(id, state) {

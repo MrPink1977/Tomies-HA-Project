@@ -16,14 +16,14 @@
 
 ### Solar / Power
 
-- Keep validating real inverter, grid, battery, and load entities.
-- Make positive grid draw visually obvious as red.
+- Keep validating real inverter, grid, battery, and load entities. Current dashboard references are checked in `DASHBOARD_ENTITY_AUDIT.md`.
+- Make positive grid draw visually obvious as red. Done in the current mini dashboard; keep watching live data.
 - Keep expanded power view useful without crowding the main grid.
 
 ### Greenhouse / Weather
 
 - Keep weather and greenhouse styling as the reference for clear section bars and meaningful accent color.
-- Review sensor names and remove any dead entities from the dashboards.
+- Review sensor names and remove any dead entities from the dashboards. Current greenhouse and weather references are checked in `DASHBOARD_ENTITY_AUDIT.md`.
 - Use `AC_INFINITY_USEFUL_ENTITIES.md` as the filter for AC Infinity controls: main panel gets live status, expanded/settings view gets cycle on/off and temperature trigger controls.
 
 ### Meshtastic / Driveway
@@ -36,5 +36,6 @@
 ### Project Hygiene
 
 - Keep `SYSTEM_REFERENCE.md` updated when services, dashboards, or entity names change.
+- Keep `DASHBOARD_ENTITY_AUDIT.md` updated when dashboard entity wiring changes.
 - Keep secrets in `.env`, `config/secrets.yaml`, or `esphome/secrets.yaml`, never in committed files.
 - Before big changes, validate with `docker compose config --quiet`.

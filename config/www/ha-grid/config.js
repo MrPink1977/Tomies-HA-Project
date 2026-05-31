@@ -11,7 +11,7 @@ export const appConfig = {
   statusItems: [
     { id: "ha", label: "HA Online", kind: "ha" },
     { id: "ollama", label: "Ollama", kind: "ollama", warnByDefault: true },
-    { id: "mqtt", label: "MQTT", entity: "binary_sensor.mqtt_status" },
+    { id: "mqtt", label: "MQTT", entity: "sensor.sem_b_active_power" },
     { id: "cameras", label: "Cameras", kind: "camera" }
   ],
   panels: [
