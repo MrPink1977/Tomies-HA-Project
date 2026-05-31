@@ -35,6 +35,7 @@ Important files:
 - `config/packages/`
 - `config/dashboards/`
 - `config/custom_components/`
+- `AC_INFINITY_USEFUL_ENTITIES.md`
 
 Local secrets stay outside Git:
 

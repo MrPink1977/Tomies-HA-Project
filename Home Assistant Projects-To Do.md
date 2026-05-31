@@ -24,6 +24,7 @@
 
 - Keep weather and greenhouse styling as the reference for clear section bars and meaningful accent color.
 - Review sensor names and remove any dead entities from the dashboards.
+- Use `AC_INFINITY_USEFUL_ENTITIES.md` as the filter for AC Infinity controls: main panel gets live status, expanded/settings view gets cycle on/off and temperature trigger controls.
 
 ### Meshtastic / Driveway
 
