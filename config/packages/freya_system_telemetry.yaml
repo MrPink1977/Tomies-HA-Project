@@ -16,7 +16,7 @@ mqtt:
     - name: "GPU Temperature"
       unique_id: freya_gpu_temperature
       state_topic: "freya/system/gpu_temperature/state"
-      unit_of_measurement: "C"
+      unit_of_measurement: "°C"
       device_class: temperature
       icon: mdi:thermometer
       state_class: measurement

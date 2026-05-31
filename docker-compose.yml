@@ -103,7 +103,7 @@ services:
               capabilities: [gpu]
     entrypoint: ["/bin/sh", "/ollama-init.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5

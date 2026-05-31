@@ -62,7 +62,7 @@ MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
 
 SENSORS = {
     "sensor.gpu_utilization": ("gpu_utilization", "%", "GPU Utilization", "mdi:expansion-card"),
-    "sensor.gpu_temperature": ("gpu_temperature", "C", "GPU Temperature", "mdi:thermometer"),
+    "sensor.gpu_temperature": ("gpu_temperature", "°C", "GPU Temperature", "mdi:thermometer"),
     "sensor.gpu_vram_used": ("gpu_vram_used", "GB", "GPU VRAM Used", "mdi:memory"),
     "sensor.gpu_vram_total": ("gpu_vram_total", "GB", "GPU VRAM Total", "mdi:memory"),
     "sensor.gpu_vram_percent": ("gpu_vram_percent", "%", "GPU VRAM Percent", "mdi:memory"),
