@@ -22,6 +22,7 @@ The local stack is defined in `docker-compose.yml`.
 | `research-bridge` | Home Assistant bridge for research jobs | `8099` |
 | `litellm` | Model routing proxy | `4000` |
 | `open-webui` | AI chat UI | `3000` |
+| `pipelines` | Open WebUI Pipelines plugin server | `9099` |
 
 OpenWakeWord and the old custom wake-word training files were removed. Voice and wake behavior should be rebuilt from a clean design later.
 
@@ -38,6 +39,8 @@ Usage notes are documented in:
 The pipeline can inject live Home Assistant entity context into Open WebUI chats and can handle direct smart-home commands through Home Assistant's REST API. Configure the Pipelines environment with `HOME_ASSISTANT_URL` and `HOME_ASSISTANT_TOKEN`. Start with `DRY_RUN=true` when validating entity matching, then disable dry-run after commands target the expected entities.
 
 Sensitive domains/actions should keep confirmation enabled. Defaults require confirmation for locks, covers, climate, vacuums, and high-impact actions such as unlock, open, set temperature, start, and return to base.
+
+The local Docker Compose stack includes the `pipelines` service and mounts `./openwebui_pipelines` to `/app/pipelines`. In Open WebUI, add a connection under Admin Panel > Settings > Connections with API URL `http://pipelines:9099` and API key `0p3n-w3bu!` unless `PIPELINES_API_KEY` is set in `.env`. After the connection works, the Pipelines settings tab should appear.
 
 ## Home Assistant
 

@@ -273,6 +273,28 @@ services:
       - ollama
       - litellm
 
+  # Open WebUI Pipelines plugin server
+  # Open WebUI connection URL from inside Docker: http://pipelines:9099
+  # Default API key: 0p3n-w3bu! unless PIPELINES_API_KEY is set in .env
+  pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: pipelines
+    ports:
+      - "9099:9099"
+    volumes:
+      - ./openwebui_pipelines:/app/pipelines
+    environment:
+      - TZ=America/New_York
+      - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
+      - HOME_ASSISTANT_URL=http://homeassistant:8123
+      - HOME_ASSISTANT_TOKEN=${HA_TOKEN}
+      - DRY_RUN=true
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - homeassistant
+
 networks:
   ha_network:
     driver: bridge
