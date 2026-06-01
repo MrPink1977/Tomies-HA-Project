@@ -25,6 +25,20 @@ The local stack is defined in `docker-compose.yml`.
 
 OpenWakeWord and the old custom wake-word training files were removed. Voice and wake behavior should be rebuilt from a clean design later.
 
+## Open WebUI Home Assistant Pipeline
+
+The Open WebUI pipeline source is:
+
+- `openwebui_pipelines/home_assistant_pipeline.py`
+
+Usage notes are documented in:
+
+- `docs/OPENWEBUI_HOME_ASSISTANT_PIPELINE.md`
+
+The pipeline can inject live Home Assistant entity context into Open WebUI chats and can handle direct smart-home commands through Home Assistant's REST API. Configure the Pipelines environment with `HOME_ASSISTANT_URL` and `HOME_ASSISTANT_TOKEN`. Start with `DRY_RUN=true` when validating entity matching, then disable dry-run after commands target the expected entities.
+
+Sensitive domains/actions should keep confirmation enabled. Defaults require confirmation for locks, covers, climate, vacuums, and high-impact actions such as unlock, open, set temperature, start, and return to base.
+
 ## Home Assistant
 
 Important files:
@@ -35,6 +49,7 @@ Important files:
 - `config/packages/`
 - `config/dashboards/`
 - `config/custom_components/`
+- `config/custom_components/stt_corrector/`
 - `AC_INFINITY_USEFUL_ENTITIES.md`
 - `DASHBOARD_ENTITY_AUDIT.md`
 - `requirements-freya-telemetry.txt`
@@ -47,6 +62,16 @@ Local secrets stay outside Git:
 - `config/www/ha-grid/local-camera.js`
 
 Docker Compose reads service tokens and passwords from `.env`. Home Assistant YAML reads local values from `config/secrets.yaml`, and ESPHome reads device secrets from `esphome/secrets.yaml`.
+
+## STT Corrector
+
+The custom Home Assistant integration lives at:
+
+- `config/custom_components/stt_corrector/`
+
+It registers the `stt_corrector` integration and wraps Home Assistant speech-to-text correction behavior with configurable phrase, replacement, fuzzy matching, punctuation, and Mandarin language correction support. It includes a config flow, diagnostics, sensors, services, translations, and brand assets.
+
+After changing this integration, restart Home Assistant, then add or adjust it from Home Assistant's integration UI. The integration declares Python requirements in its `manifest.json`; Home Assistant should install them when the integration is loaded.
 
 ## Dashboards
 
