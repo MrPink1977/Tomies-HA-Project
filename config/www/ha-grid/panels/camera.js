@@ -20,13 +20,24 @@ export function renderCameraPanel(panel, panelConfig, context) {
     loader.classList.remove("hidden");
     const text = loader.querySelector(".loader-text");
     if (text) text.textContent = "Waiting For Camera...";
+    const urls = getCameraSnapshotUrls(context);
+    if (urls.length > 1) {
+      cameraIndex = (cameraIndex + 1) % urls.length;
+      refresh();
+    }
   });
 
   wrap.append(loader, image);
   content.append(wrap);
 
+  let cameraIndex = 0;
+
   const refresh = () => {
-    const src = getCameraSnapshotUrl(context);
+    const urls = getCameraSnapshotUrls(context);
+    if (!urls.length) return;
+
+    if (cameraIndex >= urls.length) cameraIndex = 0;
+    const src = urls[cameraIndex];
     if (src) {
       image.src = `${src}${src.includes("?") ? "&" : "?"}rs=${Date.now()}`;
     }
@@ -40,14 +51,21 @@ export function renderCameraPanel(panel, panelConfig, context) {
   window.setInterval(refresh, context.config.cameraRefreshMs);
 }
 
-function getCameraSnapshotUrl(context) {
+function getCameraSnapshotUrls(context) {
+  const urls = [];
+
   for (const entityId of context.config.cameraEntities) {
     const state = context.ha.getState(entityId);
     const entityPicture = state?.attributes?.entity_picture;
-    if (entityPicture) return entityPicture;
+    if (entityPicture) urls.push(entityPicture);
   }
 
-  if (context.localCameraSnapshotUrl) return context.localCameraSnapshotUrl;
+  urls.push(...(context.config.cameraFallbackUrls || []));
 
-  return window.localStorage.getItem(context.config.cameraSnapshotStorageKey) || "";
+  if (context.localCameraSnapshotUrl) urls.push(context.localCameraSnapshotUrl);
+
+  const storedUrl = window.localStorage.getItem(context.config.cameraSnapshotStorageKey);
+  if (storedUrl) urls.push(storedUrl);
+
+  return [...new Set(urls)];
 }

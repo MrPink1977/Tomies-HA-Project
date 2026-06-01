@@ -3,8 +3,12 @@ export const appConfig = {
   subtitle: "COMMAND GRID",
   cameraSnapshotStorageKey: "haGridCameraSnapshotUrl",
   cameraEntities: [
+    "camera.esp32s3_cam",
     "camera.reolink_snapshots_fluent",
     "camera.reolink_fluent"
+  ],
+  cameraFallbackUrls: [
+    "http://192.168.0.97/capture"
   ],
   loaderTimeoutMs: 10000,
   cameraRefreshMs: 3000,
