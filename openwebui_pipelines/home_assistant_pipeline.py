@@ -65,6 +65,10 @@ STATE_QUERY_RE = re.compile(
     r"\b(?:what(?:'s| is)|is|are|show|check|get)\b.*\b(?P<target>[a-z0-9_ .'-]+)\??$",
     re.IGNORECASE,
 )
+COUNT_QUERY_RE = re.compile(
+    r"\b(?:how many|count)\b\s+(?P<domain>lights?|switches?|fans?|covers?|locks?)\b.*\b(?:on|open|locked|unlocked|off|closed)\b",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -229,6 +233,11 @@ class Pipeline:
                 service, target_text = action
                 return self._handle_service(service, target_text, message)
 
+            count_query = parse_count_query(message)
+            if count_query:
+                domain, state, area = count_query
+                return self._handle_count_query(domain, state, area)
+
             target_text = parse_state_query(message)
             if target_text:
                 return self._handle_state_query(target_text)
@@ -251,6 +260,26 @@ class Pipeline:
         attrs = state.get("attributes", {}) or {}
         extra = summarize_attributes(attrs)
         return f"{friendly} ({match.entity_id}) is {state.get('state', 'unknown')}.{extra}"
+
+    def _handle_count_query(self, domain: str, desired_state: str, area: str | None = None) -> str:
+        states = self._states()
+        matches = []
+        for state in states:
+            entity_id = str(state.get("entity_id", ""))
+            if entity_domain(entity_id) != domain:
+                continue
+            if str(state.get("state", "")).lower() != desired_state:
+                continue
+            if area and area.lower() not in searchable_text(state):
+                continue
+            matches.append(state)
+
+        area_text = f" in {area}" if area else ""
+        names = ", ".join(f"{friendly_name(state)} ({state.get('entity_id')})" for state in matches[:8])
+        if not names:
+            return f"No {domain} entities are {desired_state}{area_text}."
+        extra = f": {names}" if len(matches) <= 8 else f": {names}, and {len(matches) - 8} more"
+        return f"{len(matches)} {domain} entity/entities are {desired_state}{area_text}{extra}."
 
     def _handle_service(self, service: str, target_text: str, original_message: str) -> str:
         match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE)
@@ -341,7 +370,7 @@ def match_score(needle: str, haystack: str, entity_id: str) -> int:
 
 
 def parse_direct_action(message: str) -> tuple[str, str] | None:
-    message = normalize_request_text(message)
+    message = first_command_sentence(normalize_request_text(message))
     match = DIRECT_ACTION_RE.search(message)
     if not match:
         confirm_match = re.search(
@@ -356,10 +385,28 @@ def parse_direct_action(message: str) -> tuple[str, str] | None:
     return normalize_action(match.group("action")), match.group("target").strip(" .")
 
 
+def parse_count_query(message: str) -> tuple[str, str, str | None] | None:
+    message = normalize_request_text(message)
+    lowered = message.lower()
+    if not re.search(r"\b(how many|count)\b", lowered):
+        return None
+    domain_match = re.search(r"\b(?P<domain>lights?|switches?|fans?|covers?|locks?)\b", lowered)
+    state_match = re.search(r"\b(?P<state>on|off|open|closed|locked|unlocked)\b", lowered)
+    if not domain_match or not state_match:
+        return None
+    domain = singular_domain(domain_match.group("domain"))
+    state = state_match.group("state")
+    area_match = re.search(r"\b(?:in|inside|for)\s+(?:the\s+)?(?P<area>[a-z0-9_ .'-]+?)\??$", message, re.IGNORECASE)
+    area = area_match.group("area").strip(" .?") if area_match else None
+    return domain, state, area
+
+
 def parse_state_query(message: str) -> str | None:
     message = normalize_request_text(message)
     lowered = message.lower()
     if re.search(r"^\s*(turn on|turn off|toggle|open|close|lock|unlock)\b", lowered):
+        return None
+    if re.search(r"\b(how many|count)\b", lowered):
         return None
 
     of_match = re.search(
@@ -418,6 +465,23 @@ def is_auxiliary_source_request(message: str) -> bool:
 
 def normalize_request_text(message: str) -> str:
     return " ".join(str(message or "").strip().split())
+
+
+def first_command_sentence(message: str) -> str:
+    split = re.split(
+        r"(?<=[.!?])\s+(?=(?:confirm\s+)?(?:turn on|turn off|toggle|open|close|lock|unlock|start|stop|pause|return to base)\b)",
+        message,
+        maxsplit=1,
+        flags=re.IGNORECASE,
+    )
+    return split[0].strip()
+
+
+def singular_domain(domain: str) -> str:
+    normalized = domain.lower().rstrip("s")
+    return {"light": "light", "switche": "switch", "switch": "switch", "fan": "fan", "cover": "cover", "lock": "lock"}[
+        normalized
+    ]
 
 
 def message_text(message: dict[str, Any]) -> str:

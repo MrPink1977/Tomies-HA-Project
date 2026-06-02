@@ -18,6 +18,8 @@ This repo's Docker Compose stack includes a `pipelines` service and mounts `./op
 - `home_assistant_pipeline.py`: filter pipeline for injecting Home Assistant context into normal chats.
 - `home_assistant_control_pipe.py`: pipe pipeline/model for direct Home Assistant state lookups and dry-run service calls.
 
+`Freya Home Assistant Control` appears in Open WebUI's model selector, but it is a deterministic Python control pipe rather than a normal LLM-backed chat model. Use it for direct Home Assistant checks and commands. Use regular LiteLLM/Open WebUI models such as `freya-main` or `freya-reasoning` for open-ended conversation.
+
 1. Start or recreate the Pipelines container:
    ```powershell
    docker compose up -d pipelines
@@ -71,6 +73,7 @@ Keep locks, covers, climate, and vacuums in `REQUIRE_CONFIRMATION_DOMAINS` unles
 - `What lights are currently on?`
 - `Is the garage door open?`
 - `Is cover.awesome_table open?`
+- `How many lights are on in the bedroom?`
 - `Turn off the office fan.`
 - `Turn on movie scene.`
 - `Confirm close garage door.`

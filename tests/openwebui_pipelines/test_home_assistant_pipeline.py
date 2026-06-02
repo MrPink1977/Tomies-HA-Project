@@ -4,6 +4,7 @@ from openwebui_pipelines.home_assistant_pipeline import (
     build_context_prompt,
     extract_home_assistant_request,
     merge_system_context,
+    parse_count_query,
     parse_direct_action,
     parse_state_query,
     service_for,
@@ -32,6 +33,7 @@ STATES = [
 def test_parse_direct_action_turns_natural_language_into_service_target() -> None:
     assert parse_direct_action("turn on the kitchen counter") == ("turn_on", "kitchen counter")
     assert parse_direct_action("confirm unlock front door") == ("unlock", "front door")
+    assert parse_direct_action("Turn off Big Lamp 1. Turn off Big Lamp 1.") == ("turn_off", "Big Lamp 1")
 
 
 def test_parse_state_query_extracts_target() -> None:
@@ -42,6 +44,12 @@ def test_parse_state_query_extracts_target() -> None:
     assert parse_state_query("source") is None
     assert parse_state_query("get source") is None
     assert parse_state_query("show sources") is None
+    assert parse_state_query("how many lights are on in the bedroom?") is None
+
+
+def test_parse_count_query_extracts_domain_state_and_area() -> None:
+    assert parse_count_query("how many lights are on in the bedroom?") == ("light", "on", "bedroom")
+    assert parse_count_query("count switches off") == ("switch", "off", None)
 
 
 def test_best_entity_match_uses_friendly_names_and_entity_ids() -> None:
@@ -106,3 +114,14 @@ def test_extract_request_uses_original_user_message_from_body() -> None:
         ]
     }
     assert extract_home_assistant_request("right away. If you don't", body=body) == "is cover.awesome_table open?"
+
+
+def test_extract_request_prefers_latest_direct_command_over_history() -> None:
+    body = {
+        "messages": [
+            {"role": "user", "content": "Turn off Big Lamp 1. Turn off Big Lamp 1."},
+            {"role": "assistant", "content": "I could not match 'Big Lamp 1. ASSISTANT'."},
+            {"role": "user", "content": "turn off big lamp one"},
+        ]
+    }
+    assert extract_home_assistant_request("Big Lamp 1. ASSISTANT", body=body) == "turn off big lamp one"
