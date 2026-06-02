@@ -36,6 +36,7 @@ The Open WebUI pipeline source is:
 Usage notes are documented in:
 
 - `docs/OPENWEBUI_HOME_ASSISTANT_PIPELINE.md`
+- `requirements-openwebui-pipelines.txt`
 
 The filter pipeline can inject live Home Assistant entity context into Open WebUI chats. The control pipe appears as `Freya Home Assistant Control` and can handle direct smart-home commands through Home Assistant's REST API. Configure the Pipelines environment with `HOME_ASSISTANT_URL` and `HOME_ASSISTANT_TOKEN`. Start with `DRY_RUN=true` when validating entity matching, then disable dry-run after commands target the expected entities.
 

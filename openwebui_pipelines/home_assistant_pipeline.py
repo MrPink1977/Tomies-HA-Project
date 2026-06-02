@@ -39,6 +39,23 @@ DEFAULT_ALLOWED_DOMAINS = (
 
 DEFAULT_SENSITIVE_DOMAINS = ("lock", "cover", "climate", "vacuum")
 DEFAULT_SENSITIVE_ACTIONS = ("unlock", "open", "set_temperature", "start", "return_to_base")
+STATE_QUERY_HINTS = (
+    "light",
+    "switch",
+    "fan",
+    "cover",
+    "door",
+    "lock",
+    "climate",
+    "temperature",
+    "thermostat",
+    "scene",
+    "script",
+    "media",
+    "vacuum",
+    "sensor",
+    "entity",
+)
 DIRECT_ACTION_RE = re.compile(
     r"\b(?P<action>turn on|turn off|toggle|open|close|lock|unlock|start|stop|pause|return to base)\b\s+"
     r"(?:the\s+)?(?P<target>[a-z0-9_ .'-]+)",
@@ -214,11 +231,9 @@ class Pipeline:
             if target_text:
                 return self._handle_state_query(target_text)
 
-            context = build_context_prompt(self._states(), self.valves.MAX_CONTEXT_ENTITIES)
             return (
                 "I did not find a direct Home Assistant command in that message. "
-                "Here is the current smart-home context I can use:\n\n"
-                f"{context}"
+                "Ask for a state check or command with an exact Home Assistant entity name when possible."
             )
         except HomeAssistantError as exc:
             return f"Home Assistant error: {exc}"
@@ -340,7 +355,7 @@ def parse_direct_action(message: str) -> tuple[str, str] | None:
 
 def parse_state_query(message: str) -> str | None:
     lowered = message.lower()
-    if re.search(r"\b(turn on|turn off|toggle|open|close|lock|unlock)\b", lowered):
+    if re.search(r"^\s*(turn on|turn off|toggle|open|close|lock|unlock)\b", lowered):
         return None
 
     of_match = re.search(
@@ -354,6 +369,8 @@ def parse_state_query(message: str) -> str | None:
     direct = re.search(r"^\s*(?:is|are)\s+(?:the\s+)?(?P<target>.+?)\??\s*$", message, re.IGNORECASE)
     if direct:
         target = direct.group("target").strip(" .?")
+        if "." not in target and not any(hint in target.lower() for hint in STATE_QUERY_HINTS):
+            return None
         target = re.sub(
             r"\b(on|off|open|closed|locked|unlocked|running|stopped|paused|available|unavailable)\b$",
             "",

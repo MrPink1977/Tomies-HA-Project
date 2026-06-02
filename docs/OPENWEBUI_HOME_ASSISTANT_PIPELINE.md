@@ -70,9 +70,24 @@ Keep locks, covers, climate, and vacuums in `REQUIRE_CONFIRMATION_DOMAINS` unles
 
 - `What lights are currently on?`
 - `Is the garage door open?`
+- `Is cover.awesome_table open?`
 - `Turn off the office fan.`
 - `Turn on movie scene.`
 - `Confirm close garage door.`
+
+## Local tests
+
+Install the local test dependencies with:
+
+```powershell
+.\venv\Scripts\python.exe -m pip install -r requirements-openwebui-pipelines.txt
+```
+
+Run the pipeline tests with:
+
+```powershell
+.\venv\Scripts\python.exe -m pytest tests\openwebui_pipelines\test_home_assistant_pipeline.py
+```
 
 ## Troubleshooting
 

@@ -1,4 +1,5 @@
 from openwebui_pipelines.home_assistant_pipeline import (
+    Pipeline,
     best_entity_match,
     build_context_prompt,
     merge_system_context,
@@ -35,6 +36,8 @@ def test_parse_direct_action_turns_natural_language_into_service_target() -> Non
 def test_parse_state_query_extracts_target() -> None:
     assert parse_state_query("is the front door locked?") == "front door"
     assert parse_state_query("what is the state of garage door?") == "garage door"
+    assert parse_state_query("is cover.awesome_table open?") == "cover.awesome_table"
+    assert parse_state_query("with high-level domains") is None
 
 
 def test_best_entity_match_uses_friendly_names_and_entity_ids() -> None:
@@ -66,3 +69,10 @@ def test_merge_system_context_preserves_existing_system_message() -> None:
     merged = merge_system_context(messages, {"role": "system", "content": "Home Assistant"})
     assert len(merged) == 2
     assert merged[0]["content"] == "Original\n\nHome Assistant"
+
+
+def test_pipe_fallback_does_not_dump_full_context_for_vague_messages() -> None:
+    pipeline = Pipeline()
+    result = pipeline.pipe("with high-level domains")
+    assert "Ask for a state check or command" in result
+    assert "Live Home Assistant context" not in result

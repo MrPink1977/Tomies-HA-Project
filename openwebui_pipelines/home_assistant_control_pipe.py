@@ -31,3 +31,9 @@ class Pipeline(SharedPipeline):
         self.name = "Freya Home Assistant Control"
         if hasattr(self, "type"):
             delattr(self, "type")
+
+    async def inlet(self, body: dict, user: dict | None = None) -> dict:
+        return body
+
+    async def outlet(self, body: dict, user: dict | None = None) -> dict:
+        return body
