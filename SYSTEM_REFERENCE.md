@@ -26,6 +26,10 @@ The local stack is defined in `docker-compose.yml`.
 
 OpenWakeWord and the old custom wake-word training files were removed. Voice and wake behavior should be rebuilt from a clean design later.
 
+Voice rebuild planning is tracked in:
+
+- `FREYA_VOICE_PLAN.md`
+
 ## Open WebUI Home Assistant Pipeline
 
 The Open WebUI pipeline source is:
@@ -49,6 +53,7 @@ The local Docker Compose stack includes the `pipelines` service and mounts `./op
 Important files:
 
 - `config/configuration.yaml`
+- `config/freya_entity_aliases.yaml`
 - `config/automations.yaml`
 - `config/scenes.yaml`
 - `config/packages/`
@@ -57,6 +62,7 @@ Important files:
 - `config/custom_components/stt_corrector/`
 - `AC_INFINITY_USEFUL_ENTITIES.md`
 - `DASHBOARD_ENTITY_AUDIT.md`
+- `FREYA_VOICE_PLAN.md`
 - `requirements-freya-telemetry.txt`
 
 Local secrets stay outside Git:

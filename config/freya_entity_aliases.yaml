@@ -1,0 +1,24 @@
+# Spoken-name aliases for Freya/Home Assistant command routing.
+#
+# Keep this file boring and explicit. The pipeline can fuzzy-match entity names,
+# but safety-critical or commonly used phrases should resolve through aliases.
+
+light.big_lamp_one:
+  - big lamp one
+  - big lamp 1
+  - first big lamp
+  - lamp one
+  - lamp 1
+
+light.big_lamp_two:
+  - big lamp two
+  - big lamp 2
+  - second big lamp
+  - lamp two
+  - lamp 2
+
+cover.awesome_table:
+  - awesome table
+  - the table
+  - table
+  - standing desk
