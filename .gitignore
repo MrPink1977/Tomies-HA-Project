@@ -50,6 +50,11 @@ searxng/settings.yml
 knowledge_bases/
 prompt_engineering_kb/
 
+# Open WebUI Pipelines runtime state
+openwebui_pipelines/failed/
+openwebui_pipelines/__pycache__/
+openwebui_pipelines/*/valves.json
+
 # Local secrets and credentials
 **/secrets.yaml
 **/.secret_key

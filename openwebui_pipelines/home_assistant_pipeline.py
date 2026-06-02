@@ -10,17 +10,17 @@ smart-home actions to a local model. Configure with HOME_ASSISTANT_URL and
 HOME_ASSISTANT_TOKEN in the Open WebUI Pipelines environment.
 """
 
-from __future__ import annotations
-
 import json
 import os
 import re
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass
 from typing import Any, Iterable
 from urllib.error import HTTPError
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
+
+from pydantic import BaseModel, Field
 
 
 DEFAULT_ALLOWED_DOMAINS = (
@@ -110,10 +110,9 @@ class Pipeline:
     commands and state lookups).
     """
 
-    @dataclass
-    class Valves:
-        HOME_ASSISTANT_URL: str = field(default_factory=lambda: os.getenv("HOME_ASSISTANT_URL", ""))
-        HOME_ASSISTANT_TOKEN: str = field(default_factory=lambda: os.getenv("HOME_ASSISTANT_TOKEN", ""))
+    class Valves(BaseModel):
+        HOME_ASSISTANT_URL: str = Field(default_factory=lambda: os.getenv("HOME_ASSISTANT_URL", ""))
+        HOME_ASSISTANT_TOKEN: str = Field(default_factory=lambda: os.getenv("HOME_ASSISTANT_TOKEN", ""))
         REQUEST_TIMEOUT_SECONDS: float = 8.0
         CACHE_TTL_SECONDS: int = 45
         MAX_CONTEXT_ENTITIES: int = 80
@@ -124,6 +123,8 @@ class Pipeline:
         ENABLE_DIRECT_ACTIONS: bool = True
         ENABLE_CONTEXT_INJECTION: bool = True
         MIN_MATCH_SCORE: int = 45
+        pipelines: list[str] = []
+        priority: int = 0
 
     def __init__(self) -> None:
         self.type = "filter"
@@ -432,4 +433,4 @@ def merge_system_context(messages: list[dict[str, Any]], system_message: dict[st
 
 if __name__ == "__main__":
     pipeline = Pipeline()
-    print(json.dumps(asdict(pipeline.valves), indent=2))
+    print(json.dumps(pipeline.valves.model_dump(), indent=2))

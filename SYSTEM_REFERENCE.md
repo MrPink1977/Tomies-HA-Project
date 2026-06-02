@@ -31,12 +31,13 @@ OpenWakeWord and the old custom wake-word training files were removed. Voice and
 The Open WebUI pipeline source is:
 
 - `openwebui_pipelines/home_assistant_pipeline.py`
+- `openwebui_pipelines/home_assistant_control_pipe.py`
 
 Usage notes are documented in:
 
 - `docs/OPENWEBUI_HOME_ASSISTANT_PIPELINE.md`
 
-The pipeline can inject live Home Assistant entity context into Open WebUI chats and can handle direct smart-home commands through Home Assistant's REST API. Configure the Pipelines environment with `HOME_ASSISTANT_URL` and `HOME_ASSISTANT_TOKEN`. Start with `DRY_RUN=true` when validating entity matching, then disable dry-run after commands target the expected entities.
+The filter pipeline can inject live Home Assistant entity context into Open WebUI chats. The control pipe appears as `Freya Home Assistant Control` and can handle direct smart-home commands through Home Assistant's REST API. Configure the Pipelines environment with `HOME_ASSISTANT_URL` and `HOME_ASSISTANT_TOKEN`. Start with `DRY_RUN=true` when validating entity matching, then disable dry-run after commands target the expected entities.
 
 Sensitive domains/actions should keep confirmation enabled. Defaults require confirmation for locks, covers, climate, vacuums, and high-impact actions such as unlock, open, set temperature, start, and return to base.
 

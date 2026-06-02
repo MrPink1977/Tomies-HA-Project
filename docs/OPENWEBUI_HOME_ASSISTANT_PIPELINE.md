@@ -13,7 +13,10 @@ The `openwebui_pipelines/home_assistant_pipeline.py` file turns Open WebUI into 
 
 ## Install in Open WebUI Pipelines
 
-This repo's Docker Compose stack includes a `pipelines` service and mounts `./openwebui_pipelines` to `/app/pipelines`, so `home_assistant_pipeline.py` is available to the Pipelines server when the container starts.
+This repo's Docker Compose stack includes a `pipelines` service and mounts `./openwebui_pipelines` to `/app/pipelines`, so these pipeline files are available to the Pipelines server when the container starts:
+
+- `home_assistant_pipeline.py`: filter pipeline for injecting Home Assistant context into normal chats.
+- `home_assistant_control_pipe.py`: pipe pipeline/model for direct Home Assistant state lookups and dry-run service calls.
 
 1. Start or recreate the Pipelines container:
    ```powershell
@@ -24,9 +27,10 @@ This repo's Docker Compose stack includes a `pipelines` service and mounts `./op
    - API URL: `http://pipelines:9099`
    - API key: `0p3n-w3bu!` unless `PIPELINES_API_KEY` is set in `.env`.
 4. After the connection works, go to Admin Panel > Settings > Pipelines.
-5. Select `home_assistant_pipeline` or `Freya Home Assistant`.
-6. Start with `DRY_RUN=true` if you want to verify matching before live control.
-7. Disable `DRY_RUN` only after the pipeline matches your entity names correctly.
+5. Select `home_assistant_pipeline` / `Freya Home Assistant` for context injection.
+6. Select `home_assistant_control` / `Freya Home Assistant Control` as a model when testing direct state lookups and smart-home commands.
+7. Start with `DRY_RUN=true` if you want to verify matching before live control.
+8. Disable `DRY_RUN` only after the pipeline matches your entity names correctly.
 
 The Compose service sets:
 
