@@ -220,6 +220,8 @@ class Pipeline:
         message = extract_home_assistant_request(user_message, messages, body)
         if not message:
             return "Ask me to check or control a Home Assistant entity."
+        if is_auxiliary_source_request(message):
+            return ""
 
         try:
             action = parse_direct_action(message)
@@ -366,12 +368,13 @@ def parse_state_query(message: str) -> str | None:
         re.IGNORECASE,
     )
     if of_match:
-        return of_match.group("target").strip(" .?") or None
+        target = of_match.group("target").strip(" .?")
+        return target if is_plausible_state_target(target) else None
 
     direct = re.search(r"^\s*(?:is|are)\s+(?:the\s+)?(?P<target>.+?)\??\s*$", message, re.IGNORECASE)
     if direct:
         target = direct.group("target").strip(" .?")
-        if "." not in target and not any(hint in target.lower() for hint in STATE_QUERY_HINTS):
+        if not is_plausible_state_target(target):
             return None
         target = re.sub(
             r"\b(on|off|open|closed|locked|unlocked|running|stopped|paused|available|unavailable)\b$",
@@ -388,7 +391,29 @@ def parse_state_query(message: str) -> str | None:
     stopwords = ("the state of ", "status of ", "temperature in ", "temperature of ", "state for ")
     for stopword in stopwords:
         target = re.sub(rf"^.*\b{re.escape(stopword)}", "", target, flags=re.IGNORECASE)
-    return target.strip() or None
+    target = target.strip()
+    return target if is_plausible_state_target(target) else None
+
+
+def is_plausible_state_target(target: str) -> bool:
+    normalized = normalize_request_text(target).lower().strip(" .?")
+    if not normalized or is_auxiliary_source_request(normalized):
+        return False
+    return "." in normalized or any(hint in normalized for hint in STATE_QUERY_HINTS)
+
+
+def is_auxiliary_source_request(message: str) -> bool:
+    normalized = normalize_request_text(message).lower().strip(" .?!")
+    return normalized in {
+        "source",
+        "sources",
+        "get source",
+        "get sources",
+        "show source",
+        "show sources",
+        "retrieved source",
+        "retrieved sources",
+    }
 
 
 def normalize_request_text(message: str) -> str:

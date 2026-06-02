@@ -39,6 +39,9 @@ def test_parse_state_query_extracts_target() -> None:
     assert parse_state_query("what is the state of garage door?") == "garage door"
     assert parse_state_query("is cover.awesome_table open?") == "cover.awesome_table"
     assert parse_state_query("with high-level domains") is None
+    assert parse_state_query("source") is None
+    assert parse_state_query("get source") is None
+    assert parse_state_query("show sources") is None
 
 
 def test_best_entity_match_uses_friendly_names_and_entity_ids() -> None:
@@ -77,6 +80,12 @@ def test_pipe_fallback_does_not_dump_full_context_for_vague_messages() -> None:
     result = pipeline.pipe("with high-level domains")
     assert "Ask for a state check or command" in result
     assert "Live Home Assistant context" not in result
+
+
+def test_pipe_ignores_open_webui_source_helper_requests() -> None:
+    pipeline = Pipeline()
+    assert pipeline.pipe("source") == ""
+    assert pipeline.pipe("get source") == ""
 
 
 def test_extract_request_prefers_exact_entity_line_from_wrapped_context() -> None:
