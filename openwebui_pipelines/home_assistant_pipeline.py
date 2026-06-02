@@ -217,7 +217,7 @@ class Pipeline:
         if not self.valves.ENABLE_DIRECT_ACTIONS:
             return "Direct Home Assistant actions are disabled for this pipeline."
 
-        message = (user_message or "").strip()
+        message = extract_home_assistant_request(user_message, messages, body)
         if not message:
             return "Ask me to check or control a Home Assistant entity."
 
@@ -339,6 +339,7 @@ def match_score(needle: str, haystack: str, entity_id: str) -> int:
 
 
 def parse_direct_action(message: str) -> tuple[str, str] | None:
+    message = normalize_request_text(message)
     match = DIRECT_ACTION_RE.search(message)
     if not match:
         confirm_match = re.search(
@@ -354,6 +355,7 @@ def parse_direct_action(message: str) -> tuple[str, str] | None:
 
 
 def parse_state_query(message: str) -> str | None:
+    message = normalize_request_text(message)
     lowered = message.lower()
     if re.search(r"^\s*(turn on|turn off|toggle|open|close|lock|unlock)\b", lowered):
         return None
@@ -387,6 +389,65 @@ def parse_state_query(message: str) -> str | None:
     for stopword in stopwords:
         target = re.sub(rf"^.*\b{re.escape(stopword)}", "", target, flags=re.IGNORECASE)
     return target.strip() or None
+
+
+def normalize_request_text(message: str) -> str:
+    return " ".join(str(message or "").strip().split())
+
+
+def message_text(message: dict[str, Any]) -> str:
+    content = message.get("content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            if isinstance(item, dict) and item.get("type") == "text":
+                parts.append(str(item.get("text", "")))
+        return "\n".join(parts)
+    return str(content)
+
+
+def candidate_request_lines(text: str) -> list[str]:
+    lines = []
+    for raw_line in str(text or "").replace("\r", "\n").split("\n"):
+        line = raw_line.strip(" \t>:-\"'")
+        if not line:
+            continue
+        line = re.sub(r"^(user|human|prompt|question|query)\s*:\s*", "", line, flags=re.IGNORECASE).strip()
+        if line:
+            lines.append(line)
+    normalized = normalize_request_text(text)
+    if normalized and normalized not in lines:
+        lines.append(normalized)
+    return lines
+
+
+def is_home_assistant_request(text: str) -> bool:
+    return parse_direct_action(text) is not None or parse_state_query(text) is not None
+
+
+def extract_home_assistant_request(
+    user_message: str,
+    messages: list[dict[str, Any]] | None = None,
+    body: dict[str, Any] | None = None,
+) -> str:
+    texts: list[str] = []
+    if messages:
+        texts.extend(message_text(message) for message in reversed(messages) if message.get("role") == "user")
+    body_messages = body.get("messages") if isinstance(body, dict) else None
+    if isinstance(body_messages, list):
+        texts.extend(message_text(message) for message in reversed(body_messages) if message.get("role") == "user")
+    texts.append(user_message or "")
+
+    candidates = [line for text in texts for line in candidate_request_lines(text)]
+    for candidate in candidates:
+        if re.search(r"\b[a-z_]+\.[a-z0-9_]+\b", candidate, re.IGNORECASE) and is_home_assistant_request(candidate):
+            return normalize_request_text(candidate)
+    for candidate in candidates:
+        if is_home_assistant_request(candidate):
+            return normalize_request_text(candidate)
+    return normalize_request_text(user_message)
 
 
 def normalize_action(action: str) -> str:

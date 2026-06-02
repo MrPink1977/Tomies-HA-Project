@@ -2,6 +2,7 @@ from openwebui_pipelines.home_assistant_pipeline import (
     Pipeline,
     best_entity_match,
     build_context_prompt,
+    extract_home_assistant_request,
     merge_system_context,
     parse_direct_action,
     parse_state_query,
@@ -76,3 +77,23 @@ def test_pipe_fallback_does_not_dump_full_context_for_vague_messages() -> None:
     result = pipeline.pipe("with high-level domains")
     assert "Ask for a state check or command" in result
     assert "Live Home Assistant context" not in result
+
+
+def test_extract_request_prefers_exact_entity_line_from_wrapped_context() -> None:
+    wrapped = """
+    Retrieved 5 sources
+    User: is cover.awesome_table open?
+
+    Answer right away. If you don't know, say so.
+    """
+    assert extract_home_assistant_request(wrapped) == "is cover.awesome_table open?"
+
+
+def test_extract_request_uses_original_user_message_from_body() -> None:
+    body = {
+        "messages": [
+            {"role": "user", "content": "is cover.awesome_table open?"},
+            {"role": "user", "content": "Answer right away. If you don't know, say so."},
+        ]
+    }
+    assert extract_home_assistant_request("right away. If you don't", body=body) == "is cover.awesome_table open?"
