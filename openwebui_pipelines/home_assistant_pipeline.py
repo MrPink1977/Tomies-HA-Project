@@ -157,7 +157,7 @@ class Pipeline:
         self._states_cache_at = now
         return self._states_cache
 
-    def inlet(self, body: dict[str, Any], user: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def inlet(self, body: dict[str, Any], user: dict[str, Any] | None = None) -> dict[str, Any]:
         """Inject current Home Assistant context into normal Open WebUI chats."""
         if not self.valves.ENABLE_CONTEXT_INJECTION:
             return body
@@ -185,7 +185,7 @@ class Pipeline:
         body["messages"] = merge_system_context(messages, system_message)
         return body
 
-    def outlet(self, body: dict[str, Any], user: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def outlet(self, body: dict[str, Any], user: dict[str, Any] | None = None) -> dict[str, Any]:
         """Open WebUI-compatible no-op outlet for filter installs."""
         return body
 
