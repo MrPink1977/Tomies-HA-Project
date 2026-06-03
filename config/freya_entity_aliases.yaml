@@ -17,6 +17,12 @@ light.big_lamp_two:
   - lamp two
   - lamp 2
 
+light.ceilingfanlight:
+  - ceiling fan light
+  - cieling fan light
+  - ceiling light
+  - fan light
+
 cover.awesome_table:
   - awesome table
   - the table

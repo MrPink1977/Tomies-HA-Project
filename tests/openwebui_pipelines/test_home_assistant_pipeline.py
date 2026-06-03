@@ -33,6 +33,11 @@ STATES = [
         "state": "off",
         "attributes": {"friendly_name": "BigLamp one"},
     },
+    {
+        "entity_id": "light.ceilingfanlight",
+        "state": "unavailable",
+        "attributes": {"friendly_name": "Ceiling Fan Light"},
+    },
 ]
 
 
@@ -134,6 +139,14 @@ def test_pipe_ignores_open_webui_source_helper_requests() -> None:
     pipeline = Pipeline()
     assert pipeline.pipe("source") == ""
     assert pipeline.pipe("get source") == ""
+
+
+def test_service_call_reports_unavailable_entity() -> None:
+    pipeline = Pipeline()
+    pipeline._states_cache = STATES
+    pipeline._states_cache_at = 9999999999
+    result = pipeline._handle_service("turn_on", "ceiling fan light", "turn on ceiling fan light")
+    assert "currently unavailable" in result
 
 
 def test_extract_request_prefers_exact_entity_line_from_wrapped_context() -> None:

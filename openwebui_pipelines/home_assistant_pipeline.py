@@ -301,6 +301,8 @@ class Pipeline:
         domain, ha_service = service_for(match.domain, service)
         if not ha_service:
             return f"I matched {match.name} ({match.entity_id}), but {service!r} is not supported for {match.domain}."
+        if match.state == "unavailable":
+            return f"I matched {match.name} ({match.entity_id}), but it is currently unavailable in Home Assistant."
 
         if self._needs_confirmation(match.domain, ha_service, original_message):
             return (
