@@ -3,6 +3,7 @@ from openwebui_pipelines.home_assistant_pipeline import (
     best_entity_match,
     build_context_prompt,
     extract_home_assistant_request,
+    load_entity_aliases,
     merge_system_context,
     parse_count_query,
     parse_direct_action,
@@ -27,6 +28,11 @@ STATES = [
         "state": "closed",
         "attributes": {"friendly_name": "Garage Door"},
     },
+    {
+        "entity_id": "light.big_lamp_one",
+        "state": "off",
+        "attributes": {"friendly_name": "BigLamp one"},
+    },
 ]
 
 
@@ -40,6 +46,8 @@ def test_parse_state_query_extracts_target() -> None:
     assert parse_state_query("is the front door locked?") == "front door"
     assert parse_state_query("what is the state of garage door?") == "garage door"
     assert parse_state_query("is cover.awesome_table open?") == "cover.awesome_table"
+    assert parse_state_query("is awesome table open?") == "awesome table"
+    assert parse_state_query("is standing desk open?") == "standing desk"
     assert parse_state_query("with high-level domains") is None
     assert parse_state_query("source") is None
     assert parse_state_query("get source") is None
@@ -60,6 +68,38 @@ def test_best_entity_match_uses_friendly_names_and_entity_ids() -> None:
     exact = best_entity_match("cover.garage_door", STATES)
     assert exact is not None
     assert exact.name == "Garage Door"
+
+
+def test_best_entity_match_uses_configured_aliases_first() -> None:
+    aliases = {"light.big_lamp_one": ["big lamp 1", "lamp one"]}
+    match = best_entity_match("big lamp 1", STATES, aliases=aliases)
+    assert match is not None
+    assert match.entity_id == "light.big_lamp_one"
+    assert match.score == 100
+
+
+def test_load_entity_aliases_reads_simple_yaml(tmp_path) -> None:
+    alias_file = tmp_path / "aliases.yaml"
+    alias_file.write_text(
+        """
+light.big_lamp_one:
+  - big lamp one
+  - big lamp 1
+
+cover.awesome_table:
+  - awesome table
+""".strip(),
+        encoding="utf-8",
+    )
+    assert load_entity_aliases(str(alias_file)) == {
+        "light.big_lamp_one": ["big lamp one", "big lamp 1"],
+        "cover.awesome_table": ["awesome table"],
+    }
+
+
+def test_valves_read_dry_run_from_environment(monkeypatch) -> None:
+    monkeypatch.setenv("DRY_RUN", "true")
+    assert Pipeline.Valves().DRY_RUN is True
 
 
 def test_service_mapping_prevents_unsupported_domain_actions() -> None:

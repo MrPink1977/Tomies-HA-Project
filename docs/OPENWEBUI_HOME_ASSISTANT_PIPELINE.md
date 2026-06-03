@@ -38,9 +38,14 @@ The Compose service sets:
 
 - `HOME_ASSISTANT_URL=http://homeassistant:8123`
 - `HOME_ASSISTANT_TOKEN=${HA_TOKEN}`
+- `ENTITY_ALIASES_PATH=/app/freya_entity_aliases.yaml`
 - `DRY_RUN=true`
 
 If you are not using this Docker Compose stack, copy `openwebui_pipelines/home_assistant_pipeline.py` into your Open WebUI Pipelines workspace and set equivalent environment variables there.
+
+## Entity aliases
+
+Common spoken names are configured in `config/freya_entity_aliases.yaml` and mounted into the Pipelines container. Alias matches are checked before fuzzy matching, so phrases like `big lamp 1`, `lamp one`, `awesome table`, and `standing desk` resolve predictably.
 
 ## Recommended valve settings
 

@@ -41,9 +41,12 @@ DEFAULT_SENSITIVE_DOMAINS = ("lock", "cover", "climate", "vacuum")
 DEFAULT_SENSITIVE_ACTIONS = ("unlock", "open", "set_temperature", "start", "return_to_base")
 STATE_QUERY_HINTS = (
     "light",
+    "lamp",
     "switch",
     "fan",
     "cover",
+    "table",
+    "desk",
     "door",
     "lock",
     "climate",
@@ -69,6 +72,13 @@ COUNT_QUERY_RE = re.compile(
     r"\b(?:how many|count)\b\s+(?P<domain>lights?|switches?|fans?|covers?|locks?)\b.*\b(?:on|open|locked|unlocked|off|closed)\b",
     re.IGNORECASE,
 )
+
+
+def env_bool(name: str, default: bool = False) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 @dataclass(frozen=True)
@@ -140,10 +150,11 @@ class Pipeline:
         ALLOWED_DOMAINS: str = ",".join(DEFAULT_ALLOWED_DOMAINS)
         REQUIRE_CONFIRMATION_DOMAINS: str = ",".join(DEFAULT_SENSITIVE_DOMAINS)
         REQUIRE_CONFIRMATION_ACTIONS: str = ",".join(DEFAULT_SENSITIVE_ACTIONS)
-        DRY_RUN: bool = False
-        ENABLE_DIRECT_ACTIONS: bool = True
-        ENABLE_CONTEXT_INJECTION: bool = True
+        DRY_RUN: bool = Field(default_factory=lambda: env_bool("DRY_RUN", False))
+        ENABLE_DIRECT_ACTIONS: bool = Field(default_factory=lambda: env_bool("ENABLE_DIRECT_ACTIONS", True))
+        ENABLE_CONTEXT_INJECTION: bool = Field(default_factory=lambda: env_bool("ENABLE_CONTEXT_INJECTION", True))
         MIN_MATCH_SCORE: int = 45
+        ENTITY_ALIASES_PATH: str = Field(default_factory=lambda: os.getenv("ENTITY_ALIASES_PATH", ""))
         pipelines: list[str] = []
         priority: int = 0
 
@@ -153,6 +164,7 @@ class Pipeline:
         self.valves = self.Valves()
         self._states_cache: list[dict[str, Any]] | None = None
         self._states_cache_at = 0.0
+        self._aliases_cache: dict[str, list[str]] | None = None
 
     def _client(self) -> HomeAssistantClient:
         if not self.valves.HOME_ASSISTANT_URL or not self.valves.HOME_ASSISTANT_TOKEN:
@@ -252,7 +264,7 @@ class Pipeline:
             return f"Pipeline error while handling Home Assistant request: {exc}"
 
     def _handle_state_query(self, target_text: str) -> str:
-        match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE)
+        match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE, self._aliases())
         if not match:
             return f"I could not match '{target_text}' to a Home Assistant entity. Try the exact entity name."
         state = self._client().state(match.entity_id)
@@ -282,7 +294,7 @@ class Pipeline:
         return f"{len(matches)} {domain} entity/entities are {desired_state}{area_text}{extra}."
 
     def _handle_service(self, service: str, target_text: str, original_message: str) -> str:
-        match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE)
+        match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE, self._aliases())
         if not match:
             return f"I could not match '{target_text}' to a Home Assistant entity. Try the exact entity name."
 
@@ -312,6 +324,11 @@ class Pipeline:
             self.valves.REQUIRE_CONFIRMATION_ACTIONS
         )
 
+    def _aliases(self) -> dict[str, list[str]]:
+        if self._aliases_cache is None:
+            self._aliases_cache = load_entity_aliases(self.valves.ENTITY_ALIASES_PATH)
+        return self._aliases_cache
+
 
 def entity_domain(entity_id: str) -> str:
     return entity_id.split(".", 1)[0] if "." in entity_id else ""
@@ -322,24 +339,37 @@ def friendly_name(state: dict[str, Any]) -> str:
     return str(attrs.get("friendly_name") or state.get("entity_id") or "unknown")
 
 
-def searchable_text(state: dict[str, Any]) -> str:
+def searchable_text(state: dict[str, Any], aliases: dict[str, list[str]] | None = None) -> str:
     entity_id = str(state.get("entity_id", ""))
     attrs = state.get("attributes", {}) or {}
-    aliases = attrs.get("aliases") or attrs.get("alternate_names") or []
-    if isinstance(aliases, str):
-        aliases = [aliases]
-    return " ".join([entity_id.replace(".", " ").replace("_", " "), friendly_name(state), *map(str, aliases)]).lower()
+    ha_aliases = attrs.get("aliases") or attrs.get("alternate_names") or []
+    if isinstance(ha_aliases, str):
+        ha_aliases = [ha_aliases]
+    configured_aliases = aliases.get(entity_id, []) if aliases else []
+    return " ".join(
+        [entity_id.replace(".", " ").replace("_", " "), friendly_name(state), *map(str, ha_aliases), *configured_aliases]
+    ).lower()
 
 
-def best_entity_match(target: str, states: Iterable[dict[str, Any]], min_score: int = 45) -> EntityMatch | None:
+def best_entity_match(
+    target: str,
+    states: Iterable[dict[str, Any]],
+    min_score: int = 45,
+    aliases: dict[str, list[str]] | None = None,
+) -> EntityMatch | None:
     needle = normalize(target)
     if not needle:
         return None
 
+    state_list = list(states)
+    alias_match = alias_entity_match(needle, state_list, aliases or {})
+    if alias_match:
+        return alias_match
+
     best: EntityMatch | None = None
-    for state in states:
+    for state in state_list:
         entity_id = str(state.get("entity_id", ""))
-        haystack = normalize(searchable_text(state))
+        haystack = normalize(searchable_text(state, aliases))
         score = match_score(needle, haystack, entity_id)
         if score >= min_score and (best is None or score > best.score):
             best = EntityMatch(
@@ -350,6 +380,67 @@ def best_entity_match(target: str, states: Iterable[dict[str, Any]], min_score: 
                 score=score,
             )
     return best
+
+
+def alias_entity_match(
+    normalized_target: str,
+    states: Iterable[dict[str, Any]],
+    aliases: dict[str, list[str]],
+) -> EntityMatch | None:
+    state_by_entity = {str(state.get("entity_id", "")): state for state in states}
+    for entity_id, names in aliases.items():
+        normalized_names = {normalize(entity_id), *(normalize(name) for name in names)}
+        if normalized_target not in normalized_names:
+            continue
+        state = state_by_entity.get(entity_id)
+        if not state:
+            continue
+        return EntityMatch(
+            entity_id=entity_id,
+            name=friendly_name(state),
+            state=str(state.get("state", "unknown")),
+            domain=entity_domain(entity_id),
+            score=100,
+        )
+    return None
+
+
+def load_entity_aliases(path: str = "") -> dict[str, list[str]]:
+    alias_path = first_existing_path(
+        [
+            path,
+            os.getenv("ENTITY_ALIASES_PATH", ""),
+            "/app/freya_entity_aliases.yaml",
+            os.path.join(os.getcwd(), "config", "freya_entity_aliases.yaml"),
+        ]
+    )
+    if not alias_path:
+        return {}
+
+    aliases: dict[str, list[str]] = {}
+    current_entity = ""
+    try:
+        with open(alias_path, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.split("#", 1)[0].rstrip()
+                if not line.strip():
+                    continue
+                if not line.startswith((" ", "\t")) and line.endswith(":"):
+                    current_entity = line[:-1].strip()
+                    aliases.setdefault(current_entity, [])
+                    continue
+                if current_entity and line.strip().startswith("- "):
+                    aliases[current_entity].append(line.strip()[2:].strip().strip("\"'"))
+    except OSError:
+        return {}
+    return {entity_id: names for entity_id, names in aliases.items() if entity_id and names}
+
+
+def first_existing_path(paths: Iterable[str]) -> str:
+    for path in paths:
+        if path and os.path.exists(path):
+            return path
+    return ""
 
 
 def normalize(value: str) -> str:

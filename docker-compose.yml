@@ -283,11 +283,13 @@ services:
       - "9099:9099"
     volumes:
       - ./openwebui_pipelines:/app/pipelines
+      - ./config/freya_entity_aliases.yaml:/app/freya_entity_aliases.yaml:ro
     environment:
       - TZ=America/New_York
       - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
       - HOME_ASSISTANT_URL=http://homeassistant:8123
       - HOME_ASSISTANT_TOKEN=${HA_TOKEN}
+      - ENTITY_ALIASES_PATH=/app/freya_entity_aliases.yaml
       - DRY_RUN=true
     networks:
       - ha_network
