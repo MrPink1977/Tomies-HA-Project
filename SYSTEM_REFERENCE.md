@@ -61,6 +61,7 @@ Important files:
 
 - `config/configuration.yaml`
 - `config/freya_entity_aliases.yaml`
+- `config/freya_command_groups.yaml`
 - `config/automations.yaml`
 - `config/scenes.yaml`
 - `config/packages/`
@@ -147,16 +148,38 @@ The publisher reads `.env` when present. MQTT defaults to `localhost:1883`; set 
 Current primary ESPHome voice/device config:
 
 - `esphome/myvoiceassistant.yaml`
-
-Active face recognition now comes from Frigate, Double Take, and CompreFace. Frigate reads the Reolink front-door RTSP substream, detects `person`, and publishes MQTT events/snapshots through Mosquitto. Double Take listens to Frigate, sends images to CompreFace, and publishes camera results on `double-take/cameras/front_door`. Frigate UI is `https://localhost:8971`; Frigate API is published at `http://localhost:5001`; host RTSP/WebRTC are remapped to `8556`/`8557` because `freya-go2rtc` already owns `8554`.
-
-`front-door-face/` is the retired custom OpenCV YuNet/SFace face service. It is kept as a fallback artifact but is no longer started by `docker-compose.yml` and is no longer called by Home Assistant.
-
-`config/packages/front_door_face_review.yaml` adds MQTT/template sensors for Double Take results: `sensor.front_door_face_match`, `sensor.front_door_face_confidence`, `sensor.front_door_face_summary`, and `input_text.front_door_face_last_alert_id`. `config/automations.yaml` includes `Front Door - Double Take Face Match`, which sends Piper/phone alerts for named Double Take `matches[]` or high-confidence named `misses[]` results at or above 70% and suppresses duplicate alerts for the same event id. This was verified with a synthetic MQTT payload for `tommy` at `92.61%`. `config/dashboards/front_door_faces.yaml` is exposed at `/front-door-faces/review` and embeds Double Take, Frigate, and CompreFace. Enroll/train people in CompreFace or Double Take; see `docs/FRONT_DOOR_FACE_RECOGNITION.md`.
+- `esphome/dfrobot_ai_camera_voice.yaml` is the flashed DFRobot ESP32-S3 AI Camera V1.1 / DFR1154 front-door AI snapshot config with OV3660 camera, MAX98357 speaker, ESP-IDF framework, ESPHome web UI, stream endpoint, snapshot endpoint, and ESPHome speaker media player support. Wake-word, microphone, and Assist satellite components are intentionally removed because `micro_wake_word` repeatedly failed on this board with tensor allocation errors. Current network name: `dfrobot-ai-camera-voice.local`; current IP: `192.168.0.97`. Active Home Assistant entities include `camera.dfrobot_ai_camera_voice_camera`, `media_player.dfrobot_ai_camera_voice_speaker`, `switch.dfrobot_ai_camera_voice_speaker_mode_enable`, and `switch.dfrobot_ai_camera_voice_speaker_gain_pin`. Old Assist/wake entities may remain unavailable in Home Assistant until the ESPHome device entry is cleaned up.
+- Active face recognition now comes from Frigate, Double Take, and CompreFace. Frigate reads the Reolink front-door RTSP substream, detects `person`, and publishes MQTT events/snapshots through Mosquitto. Double Take listens to Frigate, sends images to CompreFace, and publishes camera results on `double-take/cameras/front_door`. Frigate UI is `https://localhost:8971`; Frigate API is published at `http://localhost:5001`; host RTSP/WebRTC are remapped to `8556`/`8557` because `freya-go2rtc` already owns `8554`.
+- `config/custom_components/llmvision/providers.py` has a local Ollama compatibility patch for `moondream`: the provider sends images only through `messages[].images`, not duplicate top-level `images`/`prompt` fields, because moondream can return an empty response with the duplicate chat payload.
+- `front-door-face/` is the retired custom OpenCV YuNet/SFace face service. It is kept as a fallback artifact but is no longer started by `docker-compose.yml` and is no longer called by Home Assistant.
+- `config/packages/front_door_face_review.yaml` adds MQTT/template sensors for Double Take results: `sensor.front_door_face_match`, `sensor.front_door_face_confidence`, `sensor.front_door_face_summary`, and `input_text.front_door_face_last_alert_id`. `config/automations.yaml` includes `Front Door - Double Take Face Match`, which sends Piper/phone alerts for named Double Take `matches[]` or high-confidence named `misses[]` results at or above 70% and suppresses duplicate alerts for the same event id. This was verified with a synthetic MQTT payload for `tommy` at `92.61%`. `config/dashboards/front_door_faces.yaml` is exposed at `/front-door-faces/review` and embeds Double Take, Frigate, and CompreFace. Enroll/train people in CompreFace or Double Take; see `docs/FRONT_DOOR_FACE_RECOGNITION.md`.
 
 Generated ESPHome build output is ignored:
 
 - `esphome/.esphome/`
+
+DFRobot AI Camera voice planning:
+
+- `docs/DFROBOT_AI_CAMERA_VOICE_PLAN.md`
+
+## Reolink Voice Experiment
+
+The Reolink camera can be probed as an experimental audio source:
+
+- `scripts/probe_ha_camera.py`
+- `scripts/probe_reolink_rtsp_audio.ps1`
+- `scripts/transcribe_reolink_rtsp_wyoming.py`
+- `scripts/listen_reolink_rtsp_wyoming.py`
+- `scripts/start_reolink_freya_listener.ps1`
+- `scripts/start_reolink_go2rtc.ps1`
+- `scripts/say_reolink_go2rtc.ps1`
+- `scripts/stop_reolink_go2rtc.ps1`
+- `docs/REOLINK_VOICE_EXPERIMENT.md`
+- `requirements-reolink-voice.txt`
+
+Home Assistant exposes the camera as JPEG/MJPEG camera proxy endpoints, not as a normal Assist microphone. Direct RTSP from the native Reolink integration includes mono AAC audio at 16 kHz on both sub and main streams. The local probes can transcribe camera audio with Wyoming Whisper, use a "Hey Freya" transcript gate, and route commands through strict Home Assistant entity matching. The PowerShell launcher gates Whisper transcription on `binary_sensor.reolink_person` by default, so background chunks are discarded unless the camera detects a person. Use `scripts/start_reolink_freya_listener.ps1 -PrintAll` for dry-run test sessions and `-Execute` only when actively supervising real service calls. Camera speaker/talkback should be handled as a separate phase.
+
+Reolink speaker/talkback is experimental. Home Assistant's official Reolink integration does not expose arbitrary TTS/two-way audio, so the repo includes go2rtc helper scripts that generate a temporary ONVIF config from the local HA Reolink entry and try go2rtc's stream-to-camera API.
 
 ## Validation
 

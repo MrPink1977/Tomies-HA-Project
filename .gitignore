@@ -69,14 +69,19 @@ config/www/ha-grid/local-camera.js
 config/www/front_door_ai_latest.jpg
 config/www/front_door_ai/*.jpg
 config/www/front_door_ai/*.json
+config/llmvision/
+front-door-face/
 front-door-face/data/
 frigate/media/
 frigate/config/*.db
 frigate/config/*.db-*
 frigate/config/go2rtc_homekit.yml
+frigate/config/.exports
 frigate/config/.exports/
 frigate/config/.jwt_secret
+frigate/config/.timeline
 frigate/config/.timeline/
+frigate/config/.vacuum
 frigate/config/.vacuum/
 double-take/matches/
 double-take/train/
@@ -84,5 +89,6 @@ double-take/latest/
 double-take/database.db
 double-take/config/secrets.yml
 double-take/.storage/
+double-take/.ui
 double-take/.ui/
 compreface/postgres-data/

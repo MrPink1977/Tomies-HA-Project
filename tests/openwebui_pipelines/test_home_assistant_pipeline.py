@@ -4,6 +4,7 @@ from openwebui_pipelines.home_assistant_pipeline import (
     build_context_prompt,
     extract_home_assistant_request,
     load_entity_aliases,
+    load_command_groups,
     merge_system_context,
     parse_count_query,
     parse_direct_action,
@@ -83,6 +84,14 @@ def test_best_entity_match_uses_configured_aliases_first() -> None:
     assert match.score == 100
 
 
+def test_best_entity_match_allows_alias_with_location_qualifier() -> None:
+    aliases = {"light.big_lamp_one": ["big lamp 1", "lamp one"]}
+    match = best_entity_match("big lamp 1 in the bedroom", STATES, aliases=aliases)
+    assert match is not None
+    assert match.entity_id == "light.big_lamp_one"
+    assert match.score == 100
+
+
 def test_load_entity_aliases_reads_simple_yaml(tmp_path) -> None:
     alias_file = tmp_path / "aliases.yaml"
     alias_file.write_text(
@@ -100,6 +109,55 @@ cover.awesome_table:
         "light.big_lamp_one": ["big lamp one", "big lamp 1"],
         "cover.awesome_table": ["awesome table"],
     }
+
+
+def test_load_command_groups_reads_simple_yaml(tmp_path) -> None:
+    group_file = tmp_path / "groups.yaml"
+    group_file.write_text(
+        """
+bedroom_lights:
+  domain: light
+  aliases:
+    - all bedroom lights
+  entity_ids:
+    - light.big_lamp_one
+    - light.ceilingfanlight
+""".strip(),
+        encoding="utf-8",
+    )
+    assert load_command_groups(str(group_file)) == {
+        "bedroom_lights": {
+            "name": "bedroom_lights",
+            "domain": "light",
+            "aliases": ["all bedroom lights"],
+            "entity_ids": ["light.big_lamp_one", "light.ceilingfanlight"],
+        }
+    }
+
+
+def test_group_service_dry_run_skips_unavailable_entities(tmp_path) -> None:
+    group_file = tmp_path / "groups.yaml"
+    group_file.write_text(
+        """
+bedroom_lights:
+  domain: light
+  aliases:
+    - all bedroom lights
+  entity_ids:
+    - light.big_lamp_one
+    - light.ceilingfanlight
+""".strip(),
+        encoding="utf-8",
+    )
+    pipeline = Pipeline()
+    pipeline.valves.DRY_RUN = True
+    pipeline.valves.COMMAND_GROUPS_PATH = str(group_file)
+    pipeline._states_cache = STATES
+    pipeline._states_cache_at = 9999999999
+    result = pipeline._handle_service("turn_on", "all bedroom lights", "turn on all bedroom lights")
+    assert "light.turn_on" in result
+    assert "light.big_lamp_one" in result
+    assert "light.ceilingfanlight" not in result
 
 
 def test_valves_read_dry_run_from_environment(monkeypatch) -> None:

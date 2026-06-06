@@ -1669,8 +1669,6 @@ class Ollama(Provider):
                     "images": call.base64_images,
                 },
             ],
-            "prompt": (),
-            "images": call.base64_images,
             "stream": False,
             "keep_alive": default_parameters.get("keep_alive"),
             "think": default_parameters.get("think", False)

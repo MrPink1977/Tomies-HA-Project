@@ -155,6 +155,7 @@ class Pipeline:
         ENABLE_CONTEXT_INJECTION: bool = Field(default_factory=lambda: env_bool("ENABLE_CONTEXT_INJECTION", True))
         MIN_MATCH_SCORE: int = 45
         ENTITY_ALIASES_PATH: str = Field(default_factory=lambda: os.getenv("ENTITY_ALIASES_PATH", ""))
+        COMMAND_GROUPS_PATH: str = Field(default_factory=lambda: os.getenv("COMMAND_GROUPS_PATH", ""))
         pipelines: list[str] = []
         priority: int = 0
 
@@ -165,6 +166,7 @@ class Pipeline:
         self._states_cache: list[dict[str, Any]] | None = None
         self._states_cache_at = 0.0
         self._aliases_cache: dict[str, list[str]] | None = None
+        self._command_groups_cache: dict[str, dict[str, Any]] | None = None
 
     def _client(self) -> HomeAssistantClient:
         if not self.valves.HOME_ASSISTANT_URL or not self.valves.HOME_ASSISTANT_TOKEN:
@@ -294,6 +296,10 @@ class Pipeline:
         return f"{len(matches)} {domain} entity/entities are {desired_state}{area_text}{extra}."
 
     def _handle_service(self, service: str, target_text: str, original_message: str) -> str:
+        group_result = self._handle_group_service(service, target_text)
+        if group_result:
+            return group_result
+
         match = best_entity_match(target_text, self._states(), self.valves.MIN_MATCH_SCORE, self._aliases())
         if not match:
             return f"I could not match '{target_text}' to a Home Assistant entity. Try the exact entity name."
@@ -319,6 +325,42 @@ class Pipeline:
         self._states_cache = None
         return f"Done: called {domain}.{ha_service} for {match.name} ({match.entity_id})."
 
+    def _handle_group_service(self, service: str, target_text: str) -> str | None:
+        group = best_command_group_match(target_text, self._command_groups())
+        if not group:
+            return None
+
+        domain = str(group.get("domain") or "")
+        entity_ids = [str(entity_id) for entity_id in group.get("entity_ids", []) if str(entity_id).strip()]
+        if not domain or not entity_ids:
+            return None
+
+        domain, ha_service = service_for(domain, service)
+        if not ha_service:
+            return f"I matched group {group.get('name')}, but {service!r} is not supported for {domain}."
+
+        states_by_entity = {str(state.get("entity_id", "")): state for state in self._states()}
+        available_entity_ids = [
+            entity_id
+            for entity_id in entity_ids
+            if states_by_entity.get(entity_id, {}).get("state") != "unavailable"
+        ]
+        skipped = [entity_id for entity_id in entity_ids if entity_id not in available_entity_ids]
+        if not available_entity_ids:
+            return f"I matched group {group.get('name')}, but all configured entities are unavailable."
+
+        payload = {"entity_id": available_entity_ids}
+        if self.valves.DRY_RUN:
+            return f"DRY RUN: would call {domain}.{ha_service} with {payload}."
+
+        self._client().call_service(domain, ha_service, payload)
+        self._states_cache = None
+        skipped_text = f" Skipped unavailable: {', '.join(skipped)}." if skipped else ""
+        return (
+            f"Done: called {domain}.{ha_service} for group {group.get('name')} "
+            f"({', '.join(available_entity_ids)}).{skipped_text}"
+        )
+
     def _needs_confirmation(self, domain: str, service: str, message: str) -> bool:
         if re.search(r"\b(confirm|confirmed|yes do it|go ahead)\b", message, re.IGNORECASE):
             return False
@@ -330,6 +372,11 @@ class Pipeline:
         if self._aliases_cache is None:
             self._aliases_cache = load_entity_aliases(self.valves.ENTITY_ALIASES_PATH)
         return self._aliases_cache
+
+    def _command_groups(self) -> dict[str, dict[str, Any]]:
+        if self._command_groups_cache is None:
+            self._command_groups_cache = load_command_groups(self.valves.COMMAND_GROUPS_PATH)
+        return self._command_groups_cache
 
 
 def entity_domain(entity_id: str) -> str:
@@ -392,7 +439,14 @@ def alias_entity_match(
     state_by_entity = {str(state.get("entity_id", "")): state for state in states}
     for entity_id, names in aliases.items():
         normalized_names = {normalize(entity_id), *(normalize(name) for name in names)}
-        if normalized_target not in normalized_names:
+        matched_alias = normalized_target in normalized_names
+        if not matched_alias:
+            matched_alias = any(
+                re.match(rf"^{re.escape(name)}\s+(?:in|inside|for)\s+(?:the\s+)?[a-z0-9_ .-]+$", normalized_target)
+                for name in normalized_names
+                if len(name.split()) >= 2
+            )
+        if not matched_alias:
             continue
         state = state_by_entity.get(entity_id)
         if not state:
@@ -436,6 +490,62 @@ def load_entity_aliases(path: str = "") -> dict[str, list[str]]:
     except OSError:
         return {}
     return {entity_id: names for entity_id, names in aliases.items() if entity_id and names}
+
+
+def load_command_groups(path: str = "") -> dict[str, dict[str, Any]]:
+    groups_path = first_existing_path(
+        [
+            path,
+            os.getenv("COMMAND_GROUPS_PATH", ""),
+            "/app/freya_command_groups.yaml",
+            os.path.join(os.getcwd(), "config", "freya_command_groups.yaml"),
+        ]
+    )
+    if not groups_path:
+        return {}
+
+    groups: dict[str, dict[str, Any]] = {}
+    current_group = ""
+    current_list = ""
+    try:
+        with open(groups_path, "r", encoding="utf-8") as handle:
+            for raw_line in handle:
+                line = raw_line.split("#", 1)[0].rstrip()
+                if not line.strip():
+                    continue
+                if not line.startswith((" ", "\t")) and line.endswith(":"):
+                    current_group = line[:-1].strip()
+                    current_list = ""
+                    groups[current_group] = {"name": current_group, "aliases": [], "entity_ids": []}
+                    continue
+                if not current_group:
+                    continue
+                stripped = line.strip()
+                if stripped.startswith("domain:"):
+                    groups[current_group]["domain"] = stripped.split(":", 1)[1].strip().strip("\"'")
+                    current_list = ""
+                    continue
+                if stripped in {"aliases:", "entity_ids:"}:
+                    current_list = stripped[:-1]
+                    continue
+                if current_list and stripped.startswith("- "):
+                    groups[current_group].setdefault(current_list, []).append(stripped[2:].strip().strip("\"'"))
+    except OSError:
+        return {}
+    return {name: group for name, group in groups.items() if group.get("domain") and group.get("entity_ids")}
+
+
+def best_command_group_match(target: str, groups: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    normalized_target = normalize(target)
+    if not normalized_target:
+        return None
+
+    for name, group in groups.items():
+        aliases = [name.replace("_", " "), *group.get("aliases", [])]
+        normalized_names = {normalize(alias) for alias in aliases}
+        if normalized_target in normalized_names:
+            return group
+    return None
 
 
 def first_existing_path(paths: Iterable[str]) -> str:

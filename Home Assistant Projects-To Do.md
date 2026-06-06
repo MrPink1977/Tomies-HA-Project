@@ -15,6 +15,7 @@
 - Keep Routerly as a later option for smarter model-gateway routing between `freya-fast`, `freya-main`, and `freya-reasoning`.
 - Build an entity alias/index plan for Home Assistant commands so names like "big lamp one", "bedroom lamp", and exact entity IDs resolve predictably.
 - Revisit "Hey Freya" wake-word training with a clean OpenWakeWord/Wyoming path instead of the old experiment.
+- Test the Reolink camera as a Freya voice input during the day; current prototype uses continuous RTSP audio, Wyoming Whisper, a "Hey Freya" transcript gate, and strict Home Assistant entity routing.
 - Keep text-to-speech and assistant transcript ideas separate from the old wake-word experiment.
 - Improve live assistant status with real data from Home Assistant, Ollama, and system telemetry. GPU/CPU/RAM telemetry is now defined in `config/packages/freya_system_telemetry.yaml`; keep refining the assistant/activity signals.
 

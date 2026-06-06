@@ -1,0 +1,142 @@
+substitutions:
+  name: dfrobot-ai-camera-voice
+  friendly_name: DFRobot AI Camera Voice
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: 800
+    then:
+      - output.turn_on: speaker_mode
+      - output.turn_off: speaker_gain
+      - light.turn_off: status_led
+  platformio_options:
+    build_flags: "-DBOARD_HAS_PSRAM"
+
+esp32:
+  board: esp32-s3-devkitc-1
+  flash_size: 16MB
+  framework:
+    type: esp-idf
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: !secret myvoiceassistant_api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret myvoiceassistant_ota_password
+
+wifi:
+  ssid: "WarRoom1"
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name}"
+    password: !secret myvoiceassistant_fallback_password
+
+captive_portal:
+
+web_server:
+  port: 80
+
+button:
+  - platform: restart
+    name: Restart
+
+output:
+  - platform: gpio
+    id: status_led_output
+    pin: GPIO3
+  - platform: gpio
+    id: ir_led_output
+    pin: GPIO47
+  - platform: gpio
+    id: speaker_gain
+    pin: GPIO41
+  - platform: gpio
+    id: speaker_mode
+    pin: GPIO40
+
+light:
+  - platform: binary
+    id: status_led
+    name: Status LED
+    output: status_led_output
+  - platform: binary
+    name: IR Night Vision
+    output: ir_led_output
+    restore_mode: RESTORE_DEFAULT_OFF
+
+switch:
+  - platform: output
+    id: speaker_mode_switch
+    name: Speaker Mode Enable
+    output: speaker_mode
+    restore_mode: ALWAYS_ON
+  - platform: output
+    id: speaker_gain_switch
+    name: Speaker Gain Pin
+    output: speaker_gain
+    restore_mode: ALWAYS_OFF
+
+i2s_audio:
+  - id: i2s_speaker
+    i2s_lrclk_pin: GPIO46
+    i2s_bclk_pin: GPIO45
+
+speaker:
+  - platform: i2s_audio
+    id: onboard_speaker
+    i2s_audio_id: i2s_speaker
+    dac_type: external
+    i2s_dout_pin: GPIO42
+
+media_player:
+  - platform: speaker
+    id: onboard_media_player
+    name: Speaker
+    announcement_pipeline:
+      speaker: onboard_speaker
+      sample_rate: 16000
+      num_channels: 1
+
+esp32_camera:
+  id: dfrobot_camera
+  name: Camera
+  external_clock:
+    pin: GPIO5
+    frequency: 20MHz
+  i2c_pins:
+    sda: GPIO8
+    scl: GPIO9
+  data_pins: [GPIO16, GPIO18, GPIO21, GPIO17, GPIO14, GPIO7, GPIO6, GPIO4]
+  vsync_pin: GPIO1
+  href_pin: GPIO2
+  pixel_clock_pin: GPIO15
+  resolution: 1024x768
+  jpeg_quality: 8
+  max_framerate: 2 fps
+  idle_framerate: 0.05 fps
+  vertical_flip: true
+  horizontal_mirror: false
+  brightness: 0
+  contrast: 0
+  saturation: 0
+  aec2: true
+  ae_level: 0
+  agc_gain_ceiling: 4x
+  wb_mode: auto
+
+esp32_camera_web_server:
+  - port: 8080
+    mode: stream
+  - port: 8081
+    mode: snapshot
