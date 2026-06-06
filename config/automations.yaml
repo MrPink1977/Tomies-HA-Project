@@ -564,29 +564,83 @@
   actions:
   - action: script.go_to_command_screen
   mode: single
-- id: '1779077414849'
-  alias: ESP32 Snapshot When Reolink Detects Motion
-  description: ''
+- id: front_door_double_take_face_match
+  alias: Front Door - Double Take Face Match
+  description: Announces and notifies when Double Take publishes a front-door face result.
   triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.front_door_motion
-    - binary_sensor.motion_light_person
-    - binary_sensor.motion_light_animal
-    - binary_sensor.motion_light_vehicle
-    to: 'on'
+  - trigger: mqtt
+    topic: double-take/cameras/front_door
+  conditions: []
   actions:
-  - action: camera.snapshot
-    target:
-      entity_id: camera.esp32s3_cam
-    data:
-      filename: /config/www/esp32_latest.jpg
-  - action: notify.notify_mobile_app_estes
-    data:
-      title: ESP32 Camera Snapshot
-      message: Reolink detected motion.
+  - variables:
+      event_id: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {{ payload.id | default('') }}
+      face_name: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.match is defined and payload.match.name is defined %}
+          {{ payload.match.name }}
+        {% elif payload.matches is defined and payload.matches | count > 0 %}
+          {{ payload.matches[0].name | default('unknown') }}
+        {% elif payload.misses is defined and payload.misses | count > 0 %}
+          {{ payload.misses[0].name | default('unknown') }}
+        {% elif payload.name is defined %}
+          {{ payload.name }}
+        {% else %}
+          unknown
+        {% endif %}
+      confidence: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.match is defined and payload.match.confidence is defined %}
+          {{ payload.match.confidence | float(0) }}
+        {% elif payload.matches is defined and payload.matches | count > 0 %}
+          {{ payload.matches[0].confidence | default(0) | float(0) }}
+        {% elif payload.misses is defined and payload.misses | count > 0 %}
+          {{ payload.misses[0].confidence | default(0) | float(0) }}
+        {% elif payload.confidence is defined %}
+          {{ payload.confidence | float(0) }}
+        {% else %}
+          0
+        {% endif %}
+      face_alert: >-
+        {% set name = face_name | trim %}
+        {% set score = confidence | float(0) %}
+        {% if name not in ['unknown', 'none', ''] and score >= 70 %}
+          {{ name }} is at the front door.
+        {% elif score >= 40 %}
+          Unknown person at the front door.
+        {% else %}
+          {{ '' }}
+        {% endif %}
+  - if:
+    - condition: template
+      value_template: >-
+        {{ event_id | length > 0 and
+           event_id == states('input_text.front_door_face_last_alert_id') }}
+    then:
+    - stop: Front door face alert already sent for this event.
+  - if:
+    - condition: template
+      value_template: "{{ face_alert | trim | length > 0 }}"
+    then:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.front_door_face_last_alert_id
       data:
-        image: /local/esp32_latest.jpg
+        value: "{{ event_id }}"
+    - action: tts.speak
+      continue_on_error: true
+      target:
+        entity_id: tts.piper
+      data:
+        media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
+        message: "{{ face_alert | trim }}"
+    - action: notify.mobile_app_tomies_iphone
+      data:
+        title: Front Door Face
+        message: "{{ face_alert | trim }} Confidence {{ confidence | float(0) | round(1) }}%."
+        data:
+          url: /front-door-faces/review
   mode: single
 - id: turn_on_big_lamps
   alias: Turn on big lamps

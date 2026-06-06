@@ -20,6 +20,13 @@ The local stack is defined in `docker-compose.yml`.
 | `searxng` | Local search backend | `8088` |
 | `local-deep-research` | Research/report service | `5000` |
 | `research-bridge` | Home Assistant bridge for research jobs | `8099` |
+| `frigate` | NVR/person detection for camera events | `8971`, `5001`, `8556`, `8557` |
+| `double-take` | Face-recognition UI/router for Frigate snapshots | `3030` |
+| `compreface-ui` | CompreFace web UI/API gateway | `8001` |
+| `compreface-api` | CompreFace API backend | internal |
+| `compreface-admin` | CompreFace admin backend | internal |
+| `compreface-core` | CompreFace ML worker | internal |
+| `compreface-postgres-db` | CompreFace database | internal |
 | `litellm` | Model routing proxy | `4000` |
 | `open-webui` | AI chat UI | `3000` |
 | `pipelines` | Open WebUI Pipelines plugin server | `9099` |
@@ -140,6 +147,12 @@ The publisher reads `.env` when present. MQTT defaults to `localhost:1883`; set 
 Current primary ESPHome voice/device config:
 
 - `esphome/myvoiceassistant.yaml`
+
+Active face recognition now comes from Frigate, Double Take, and CompreFace. Frigate reads the Reolink front-door RTSP substream, detects `person`, and publishes MQTT events/snapshots through Mosquitto. Double Take listens to Frigate, sends images to CompreFace, and publishes camera results on `double-take/cameras/front_door`. Frigate UI is `https://localhost:8971`; Frigate API is published at `http://localhost:5001`; host RTSP/WebRTC are remapped to `8556`/`8557` because `freya-go2rtc` already owns `8554`.
+
+`front-door-face/` is the retired custom OpenCV YuNet/SFace face service. It is kept as a fallback artifact but is no longer started by `docker-compose.yml` and is no longer called by Home Assistant.
+
+`config/packages/front_door_face_review.yaml` adds MQTT/template sensors for Double Take results: `sensor.front_door_face_match`, `sensor.front_door_face_confidence`, `sensor.front_door_face_summary`, and `input_text.front_door_face_last_alert_id`. `config/automations.yaml` includes `Front Door - Double Take Face Match`, which sends Piper/phone alerts for named Double Take `matches[]` or high-confidence named `misses[]` results at or above 70% and suppresses duplicate alerts for the same event id. This was verified with a synthetic MQTT payload for `tommy` at `92.61%`. `config/dashboards/front_door_faces.yaml` is exposed at `/front-door-faces/review` and embeds Double Take, Frigate, and CompreFace. Enroll/train people in CompreFace or Double Take; see `docs/FRONT_DOOR_FACE_RECOGNITION.md`.
 
 Generated ESPHome build output is ignored:
 

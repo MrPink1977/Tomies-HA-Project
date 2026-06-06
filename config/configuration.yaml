@@ -4,6 +4,15 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
+lovelace:
+  dashboards:
+    front-door-faces:
+      mode: yaml
+      title: Front Door Faces
+      icon: mdi:face-recognition
+      show_in_sidebar: true
+      filename: dashboards/front_door_faces.yaml
+
 # Time & Date sensor for LCARS clock
 sensor:
   - platform: time_date

@@ -1,0 +1,50 @@
+auth: false
+
+mqtt:
+  host: mosquitto
+  port: 1883
+  topics:
+    frigate: frigate/events
+    homeassistant: homeassistant
+    matches: double-take/matches
+    cameras: double-take/cameras
+
+frigate:
+  url: http://frigate:5000
+  update_sub_labels: true
+  stop_on_match: true
+  labels:
+    - person
+  attempts:
+    latest: 8
+    snapshot: 8
+    mqtt: true
+    delay: 1
+  image:
+    height: 500
+  cameras:
+    - front_door
+
+detect:
+  match:
+    save: true
+    base64: false
+    confidence: 75
+    purge: 168
+  unknown:
+    save: true
+    base64: false
+    confidence: 40
+    purge: 72
+
+detectors:
+  compreface:
+    url: http://compreface-ui:80
+    key: !secret compreface_key
+    timeout: 15
+    det_prob_threshold: 0.8
+    face_plugins: age,gender
+
+opencv:
+  face_required: true
+  min_area: 2500

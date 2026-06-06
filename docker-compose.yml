@@ -225,6 +225,132 @@ services:
       - local-deep-research
       - homeassistant
 
+  frigate:
+    container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable
+    privileged: true
+    shm_size: "256mb"
+    restart: unless-stopped
+    ports:
+      - "8971:8971"
+      - "5001:5000"
+      - "8556:8554"
+      - "8557:8555/tcp"
+      - "8557:8555/udp"
+    volumes:
+      - ./frigate/config:/config
+      - ./frigate/media:/media/frigate
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=America/New_York
+      - FRIGATE_RTSP_USER=${FRIGATE_RTSP_USER:?Set FRIGATE_RTSP_USER in .env}
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD:?Set FRIGATE_RTSP_PASSWORD in .env}
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+
+  double-take:
+    container_name: double-take
+    image: jakowenko/double-take:latest
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    volumes:
+      - ./double-take:/.storage
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+      - frigate
+      - compreface-ui
+
+  compreface-postgres-db:
+    container_name: compreface-postgres-db
+    image: exadel/compreface-postgres-db:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=frs
+    volumes:
+      - ./compreface/postgres-data:/var/lib/postgresql/data
+    networks:
+      - ha_network
+
+  compreface-admin:
+    container_name: compreface-admin
+    image: exadel/compreface-admin:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/frs
+      - SPRING_PROFILES_ACTIVE=dev
+      - ENABLE_EMAIL_SERVER=false
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_USERNAME=
+      - EMAIL_FROM=
+      - EMAIL_PASSWORD=
+      - ADMIN_JAVA_OPTS=-Xmx1g
+      - MAX_FILE_SIZE=5MB
+      - MAX_REQUEST_SIZE=10MB
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-postgres-db
+      - compreface-api
+
+  compreface-api:
+    container_name: compreface-api
+    image: exadel/compreface-api:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/frs
+      - SPRING_PROFILES_ACTIVE=dev
+      - API_JAVA_OPTS=-Xmx4g
+      - SAVE_IMAGES_TO_DB=true
+      - MAX_FILE_SIZE=5MB
+      - MAX_REQUEST_SIZE=10MB
+      - CONNECTION_TIMEOUT=10000
+      - READ_TIMEOUT=60000
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-postgres-db
+
+  compreface-ui:
+    container_name: compreface-ui
+    image: exadel/compreface-fe:1.2.0
+    restart: unless-stopped
+    ports:
+      - "8001:80"
+    environment:
+      - CLIENT_MAX_BODY_SIZE=10M
+      - PROXY_READ_TIMEOUT=60000ms
+      - PROXY_CONNECT_TIMEOUT=10000ms
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-api
+      - compreface-admin
+
+  compreface-core:
+    container_name: compreface-core
+    image: exadel/compreface-core:1.2.0
+    restart: unless-stopped
+    environment:
+      - ML_PORT=3000
+      - IMG_LENGTH_LIMIT=640
+      - UWSGI_PROCESSES=2
+      - UWSGI_THREADS=1
+    networks:
+      - ha_network
+
   # ── LiteLLM ─────────────────────────────────────────────────
   # Unified model proxy — sits in front of Ollama and exposes named model
   # endpoints (freya-main, freya-reasoning, freya-fast, freya-vision)

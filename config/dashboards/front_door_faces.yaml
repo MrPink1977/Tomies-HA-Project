@@ -1,0 +1,27 @@
+title: Front Door Faces
+views:
+  - title: Recognition
+    path: review
+    icon: mdi:face-recognition
+    cards:
+      - type: entities
+        title: Latest Recognition
+        entities:
+          - entity: sensor.front_door_face_summary
+            name: Summary
+          - entity: sensor.front_door_face_match
+            name: Match
+          - entity: sensor.front_door_face_confidence
+            name: Confidence
+      - type: iframe
+        title: Double Take
+        url: http://localhost:3030
+        aspect_ratio: 75%
+      - type: iframe
+        title: Frigate
+        url: http://localhost:8971
+        aspect_ratio: 75%
+      - type: iframe
+        title: CompreFace
+        url: http://localhost:8001
+        aspect_ratio: 75%
