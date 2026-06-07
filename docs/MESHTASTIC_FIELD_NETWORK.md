@@ -4,17 +4,21 @@ Last updated: 2026-06-07
 
 ## Current layout
 
-- `TripleSixRanch` / `TSR1`
-  - Main Home Assistant and MQTT gateway.
-  - Hardware: Heltec V3.
-  - WiFi static IP: `192.168.0.96`.
-  - Meshtastic TCP API: `192.168.0.96:4403`.
+- `WarRoom-Base` / `BASE`
+  - Main inside Home Assistant and MQTT gateway.
+  - Hardware: Heltec V4.
+  - WiFi IP: `192.168.0.95`.
+  - Meshtastic TCP API: `192.168.0.95:4403`.
   - Role: `CLIENT_BASE`.
   - Bluetooth remains enabled with no PIN for field access.
   - MQTT is enabled to the local Home Assistant broker.
   - Private primary channel uplink/downlink is enabled.
   - Public `LongFast` uplink is enabled and downlink is disabled.
-  - The radio may still show a leftover `testing` channel slot at index 3; it is not used and has uplink/downlink disabled.
+  - Range test is disabled.
+
+- `TripleSixRanch` / `TSR1`
+  - No longer the main gateway after WiFi stability concerns.
+  - If used as a roof/high node, keep the same channels, LoRa TX enabled, and MQTT disabled so `WarRoom-Base` remains the single MQTT gateway.
 
 - `TSR2`
   - Field relay halfway down the driveway.
@@ -30,14 +34,10 @@ Last updated: 2026-06-07
   - Home Assistant alerting is handled by the `Driveway Vehicle Alert` automation.
   - PIR sensitivity and placement may still need field tuning over several days.
 
-- `WarRoom-Base`
-  - Former base node, now intended for handheld or alternate use.
-  - MQTT disabled so `TSR1` is the single active Home Assistant/MQTT gateway.
-
 ## Home Assistant integration
 
-- Main Meshtastic integration points to `192.168.0.96:4403`.
-- Meshtastic UI points to `192.168.0.96:4403`.
+- Main Meshtastic integration points to `192.168.0.95:4403`.
+- Meshtastic UI points to `192.168.0.95:4403`.
 - MQTT gateway traffic uses root topic `msh/US`.
 - The driveway automation subscribes with a wildcard gateway topic:
   - `msh/US/2/json/LongFast/+`
@@ -48,5 +48,5 @@ Last updated: 2026-06-07
 ## Operational notes
 
 - Meshtastic export/config backups are stored locally under `meshtastic_backups/` and intentionally ignored by git because they may contain WiFi, MQTT, channel, or key material.
-- If TSR1 is replaced again, update both Home Assistant Meshtastic config entries to the new node's IP and keep the automation topic wildcarded.
+- If the inside base is replaced again, update both Home Assistant Meshtastic config entries to the new node's IP and keep the automation topic wildcarded.
 - If driveway alerts become noisy, tune the PIR hardware sensitivity first, then adjust node placement or debounce/minimum broadcast timing.
