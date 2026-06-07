@@ -1,19 +1,14 @@
 - id: '1769064036193'
-  alias: Driveway Alarm2
+  alias: Driveway Vehicle Alert
   triggers:
   - trigger: mqtt
-    topic: msh/US/2/json/LongFast/!f669c5d0
+    topic: msh/US/2/json/LongFast/+
     value_template: '{{ value_json.type }}'
     payload: detection
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.payload_json.from == 4134185060 and trigger.payload_json.payload.text == "Driveway detected" }}'
   actions:
-  - wait_for_trigger:
-    - trigger: mqtt
-      topic: msh/US/2/json/LongFast/!f669c5d0
-      value_template: '{{ value_json.type }}'
-      payload: detection
-    timeout: 00:00:10
-    continue_on_timeout: false
   - action: assist_satellite.announce
     target:
       entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
@@ -22,7 +17,7 @@
       preannounce: true
   - action: notify.mobile_app_tomies_iphone
     data:
-      message: Motion detected
+      message: I have detected a vehicle in the driveway.
       title: "\U0001F7E1 DRIVEWAY"
   mode: single
 - id: '1769559471401'
