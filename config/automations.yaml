@@ -1,5 +1,6 @@
 - id: '1769064036193'
   alias: Driveway Vehicle Alert
+  initial_state: true
   triggers:
   - trigger: mqtt
     topic: msh/US/2/json/LongFast/+
