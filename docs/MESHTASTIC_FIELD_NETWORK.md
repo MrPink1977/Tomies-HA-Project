@@ -12,6 +12,7 @@ Last updated: 2026-06-07
   - Role: `CLIENT_BASE`.
   - Bluetooth remains enabled with no PIN for field access.
   - MQTT is enabled to the local Home Assistant broker.
+  - MQTT map reporting is disabled so private sensor node locations are not published as map data.
   - Private primary channel uplink/downlink is enabled.
   - Public `LongFast` uplink is enabled and downlink is disabled.
   - Range test is disabled.
@@ -31,6 +32,7 @@ Last updated: 2026-06-07
   - Driveway detection node.
   - PIR signal connected to GPIO5.
   - Detection sensor broadcasts `Driveway detected`.
+  - Should remain private-only: no public channel, no MQTT, and no fixed/manual position.
   - Home Assistant alerting is handled by the `Driveway Vehicle Alert` automation.
   - PIR sensitivity and placement may still need field tuning over several days.
 
@@ -49,4 +51,5 @@ Last updated: 2026-06-07
 
 - Meshtastic export/config backups are stored locally under `meshtastic_backups/` and intentionally ignored by git because they may contain WiFi, MQTT, channel, or key material.
 - If the inside base is replaced again, update both Home Assistant Meshtastic config entries to the new node's IP and keep the automation topic wildcarded.
+- Keep gateway MQTT map reporting disabled unless every node with shared map data is safe to publish.
 - If driveway alerts become noisy, tune the PIR hardware sensitivity first, then adjust node placement or debounce/minimum broadcast timing.
