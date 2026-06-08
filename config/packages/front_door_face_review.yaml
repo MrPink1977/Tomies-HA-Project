@@ -8,8 +8,6 @@ mqtt:
           {{ value_json.match.name }}
         {% elif value_json.matches is defined and value_json.matches | count > 0 %}
           {{ value_json.matches[0].name | default('unknown') }}
-        {% elif value_json.misses is defined and value_json.misses | count > 0 %}
-          {{ value_json.misses[0].name | default('unknown') }}
         {% elif value_json.name is defined %}
           {{ value_json.name }}
         {% else %}
@@ -26,8 +24,6 @@ mqtt:
           {{ value_json.match.confidence }}
         {% elif value_json.matches is defined and value_json.matches | count > 0 %}
           {{ value_json.matches[0].confidence | default(0) }}
-        {% elif value_json.misses is defined and value_json.misses | count > 0 %}
-          {{ value_json.misses[0].confidence | default(0) }}
         {% elif value_json.confidence is defined %}
           {{ value_json.confidence }}
         {% else %}

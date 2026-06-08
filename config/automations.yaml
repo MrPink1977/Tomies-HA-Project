@@ -20,6 +20,8 @@
     data:
       message: I have detected a vehicle in the driveway.
       title: "\U0001F7E1 DRIVEWAY"
+  - delay:
+      minutes: 3
   mode: single
 - id: '1769559471401'
   alias: Motion@FrontDoor
@@ -578,8 +580,6 @@
           {{ payload.match.name }}
         {% elif payload.matches is defined and payload.matches | count > 0 %}
           {{ payload.matches[0].name | default('unknown') }}
-        {% elif payload.misses is defined and payload.misses | count > 0 %}
-          {{ payload.misses[0].name | default('unknown') }}
         {% elif payload.name is defined %}
           {{ payload.name }}
         {% else %}
@@ -591,19 +591,25 @@
           {{ payload.match.confidence | float(0) }}
         {% elif payload.matches is defined and payload.matches | count > 0 %}
           {{ payload.matches[0].confidence | default(0) | float(0) }}
-        {% elif payload.misses is defined and payload.misses | count > 0 %}
-          {{ payload.misses[0].confidence | default(0) | float(0) }}
         {% elif payload.confidence is defined %}
           {{ payload.confidence | float(0) }}
+        {% else %}
+          0
+        {% endif %}
+      person_count: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.counts is defined and payload.counts.person is defined %}
+          {{ payload.counts.person | int(0) }}
         {% else %}
           0
         {% endif %}
       face_alert: >-
         {% set name = face_name | trim %}
         {% set score = confidence | float(0) %}
-        {% if name not in ['unknown', 'none', ''] and score >= 70 %}
+        {% set people = person_count | int(0) %}
+        {% if people > 0 and name not in ['unknown', 'none', ''] and score >= 70 %}
           {{ name }} is at the front door.
-        {% elif score >= 40 %}
+        {% elif people > 0 and score >= 65 %}
           Unknown person at the front door.
         {% else %}
           {{ '' }}
