@@ -14,7 +14,7 @@ Last updated: 2026-06-07
   - MQTT is enabled to the local Home Assistant broker.
   - MQTT map reporting is disabled so private sensor node locations are not published as map data.
   - Private primary channel uplink/downlink is enabled.
-  - Public `LongFast` uplink is enabled and downlink is disabled.
+  - Public `LongFast` uplink/downlink is enabled so the base can read public channel traffic while MQTT map reporting remains disabled.
   - Range test is disabled.
 
 - `TripleSixRanch` / `TSR1`
