@@ -38,8 +38,8 @@ Last updated: 2026-06-07
 
 ## Home Assistant integration
 
-- Main Meshtastic integration points to `192.168.0.95:4403`.
-- Meshtastic UI points to `192.168.0.95:4403`.
+- Meshtastic UI points directly to `192.168.0.95:4403` and should be the only Home Assistant client connected directly to the radio.
+- The separate `meshtastic` Home Assistant integration is disabled to avoid stealing the radio connection from Meshtastic UI. Meshtastic devices allow only one direct client session at a time.
 - MQTT gateway traffic uses root topic `msh/US`.
 - The driveway automation subscribes with a wildcard gateway topic:
   - `msh/US/2/json/LongFast/+`
@@ -50,6 +50,6 @@ Last updated: 2026-06-07
 ## Operational notes
 
 - Meshtastic export/config backups are stored locally under `meshtastic_backups/` and intentionally ignored by git because they may contain WiFi, MQTT, channel, or key material.
-- If the inside base is replaced again, update both Home Assistant Meshtastic config entries to the new node's IP and keep the automation topic wildcarded.
+- If the inside base is replaced again, update the Meshtastic UI config entry to the new node's IP and keep the automation topic wildcarded.
 - Keep gateway MQTT map reporting disabled unless every node with shared map data is safe to publish.
 - If driveway alerts become noisy, tune the PIR hardware sensitivity first, then adjust node placement or debounce/minimum broadcast timing.
