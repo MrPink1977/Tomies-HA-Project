@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from homeassistant.components.frontend import (
-    async_register_built_in_panel,
-    async_remove_panel,
-)
+from homeassistant.components.frontend import async_remove_panel
+from homeassistant.components.panel_custom import async_register_panel as async_register_custom_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant
 
@@ -28,23 +26,15 @@ async def async_register_panel(hass: HomeAssistant) -> None:
     )
 
     # Remove stale panel from a previous (possibly failed) setup.
-    try:
-        async_remove_panel(hass, PANEL_URL)
-    except KeyError:
-        pass
+    async_remove_panel(hass, PANEL_URL, warn_if_unknown=False)
 
-    async_register_built_in_panel(
+    await async_register_custom_panel(
         hass,
-        component_name="custom",
+        frontend_url_path=PANEL_URL,
+        webcomponent_name="meshtastic-ui-panel",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
-        frontend_url_path=PANEL_URL,
-        config={
-            "_panel_custom": {
-                "name": "meshtastic-ui-panel",
-                "module_url": f"/{PANEL_URL}/{FRONTEND_PATH}/panel.js",
-            }
-        },
+        module_url=f"/{PANEL_URL}/{FRONTEND_PATH}/panel.js",
         require_admin=False,
     )
 
