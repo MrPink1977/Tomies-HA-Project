@@ -5,20 +5,20 @@ Last updated: 2026-06-11
 ## Current layout
 
 - `WarRoom-Base` / `BASE`
-  - Inside/easy-access emergency grab radio kept near the PC until needed.
+  - Main inside Home Assistant and MQTT gateway.
   - Hardware: Heltec V4.
-  - Role: `CLIENT`.
-  - WiFi is disabled for field/battery use; manage it by USB serial or Bluetooth.
+  - WiFi IP: `192.168.0.95`.
+  - Meshtastic TCP API: `192.168.0.95:4403`.
+  - Role: `CLIENT_BASE`.
   - Bluetooth remains enabled with no PIN for field access.
-  - MQTT is disabled.
-  - MQTT map reporting is disabled.
-  - LoRa TX is enabled with hop limit 3.
+  - MQTT is enabled to the local Home Assistant broker.
+  - MQTT map reporting is disabled so private sensor node locations are not published as map data.
   - Private primary channel uplink/downlink is enabled.
-  - Public `LongFast` uplink/downlink is enabled for normal public mesh messages.
+  - Public `LongFast` uplink/downlink is enabled so the base can read public channel traffic while MQTT map reporting remains disabled.
   - Range test is disabled.
 
 - `TripleSixRanch` / `TSR1`
-  - Main Home Assistant Meshtastic UI radio target because it is the roof/high node and has the better RF position.
+  - Roof/high node for RF coverage, but no longer the Home Assistant Meshtastic UI target because its TCP/WiFi connection became unstable.
   - Hardware: Heltec V3.
   - WiFi IP: `192.168.0.96`.
   - Meshtastic TCP API: `192.168.0.96:4403`.
@@ -45,7 +45,7 @@ Last updated: 2026-06-11
 
 ## Home Assistant integration
 
-- Meshtastic UI points directly to `192.168.0.96:4403` and should be the only Home Assistant client connected directly to that radio.
+- Meshtastic UI points directly to `192.168.0.95:4403` and should be the only Home Assistant client connected directly to that radio.
 - The separate `meshtastic` Home Assistant integration is disabled to avoid stealing the radio connection from Meshtastic UI. Meshtastic devices allow only one direct client session at a time.
 - MQTT gateway traffic uses root topic `msh/US`.
 - The driveway automation subscribes with a wildcard gateway topic:
