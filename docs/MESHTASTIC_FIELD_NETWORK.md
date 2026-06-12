@@ -5,16 +5,16 @@ Last updated: 2026-06-11
 ## Current layout
 
 - `WarRoom-Base` / `BASE`
-  - Inside/easy-access admin node and fallback gateway.
+  - Inside/easy-access emergency grab radio kept near the PC until needed.
   - Hardware: Heltec V4.
-  - WiFi IP: `192.168.0.95`.
-  - Meshtastic TCP API: `192.168.0.95:4403`.
-  - Role: `CLIENT_BASE`.
+  - Role: `CLIENT`.
+  - WiFi is disabled for field/battery use; manage it by USB serial or Bluetooth.
   - Bluetooth remains enabled with no PIN for field access.
-  - MQTT is enabled to the local Home Assistant broker.
-  - MQTT map reporting is disabled so private sensor node locations are not published as map data.
+  - MQTT is disabled.
+  - MQTT map reporting is disabled.
+  - LoRa TX is enabled with hop limit 3.
   - Private primary channel uplink/downlink is enabled.
-  - Public `LongFast` uplink/downlink is enabled so the base can read public channel traffic while MQTT map reporting remains disabled.
+  - Public `LongFast` uplink/downlink is enabled for normal public mesh messages.
   - Range test is disabled.
 
 - `TripleSixRanch` / `TSR1`
