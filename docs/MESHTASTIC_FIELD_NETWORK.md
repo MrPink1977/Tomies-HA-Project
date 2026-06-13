@@ -1,6 +1,6 @@
 # Meshtastic field network
 
-Last updated: 2026-06-11
+Last updated: 2026-06-13
 
 ## Current layout
 
@@ -34,6 +34,8 @@ Last updated: 2026-06-11
   - Rebroadcast mode: `ALL`.
   - MQTT disabled.
   - Bluetooth remains enabled with no PIN for field access.
+  - LoRa slot/channel number must match the base: `0`.
+  - Validated at bench on 2026-06-13 after correcting it from LoRa slot `20` to `0`; traceroute to `WarRoom-Base` succeeded both directions.
 
 - `Driveway-PIR`
   - Driveway detection node.
