@@ -3,9 +3,10 @@ export const appConfig = {
   subtitle: "COMMAND GRID",
   cameraSnapshotStorageKey: "haGridCameraSnapshotUrl",
   cameraEntities: [
-    "camera.esp32s3_cam",
     "camera.reolink_snapshots_fluent",
-    "camera.reolink_fluent"
+    "camera.reolink_fluent",
+    "camera.esp32s3_cam",
+    "camera.dfrobot_ai_camera_voice_camera"
   ],
   cameraFallbackUrls: [
     "http://192.168.0.97/capture"
@@ -84,7 +85,14 @@ export const appConfig = {
           role: "PRIVATE PIR",
           private: true
         }
-      ]
+      ],
+      computeEntities: {
+        gpuUtil: ["sensor.gpu_utilization", "sensor.fbivan_gpuload"],
+        gpuTemp: ["sensor.gpu_temperature", "sensor.fbivan_gputemperature"],
+        vramPct: ["sensor.gpu_vram_percent"],
+        cpuPct: ["sensor.host_cpu_percent", "sensor.fbivan_cpuload"],
+        ramPct: ["sensor.host_ram_percent", "sensor.fbivan_memoryusage"]
+      }
     }
   ]
 };

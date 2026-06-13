@@ -54,18 +54,22 @@ export function renderCameraPanel(panel, panelConfig, context) {
 function getCameraSnapshotUrls(context) {
   const urls = [];
 
-  for (const entityId of context.config.cameraEntities) {
-    const state = context.ha.getState(entityId);
-    const entityPicture = state?.attributes?.entity_picture;
-    if (entityPicture) urls.push(entityPicture);
-  }
-
-  urls.push(...(context.config.cameraFallbackUrls || []));
-
-  if (context.localCameraSnapshotUrl) urls.push(context.localCameraSnapshotUrl);
-
   const storedUrl = window.localStorage.getItem(context.config.cameraSnapshotStorageKey);
   if (storedUrl) urls.push(storedUrl);
+
+  const entityUrls = [];
+  for (const entityId of context.config.cameraEntities) {
+    const state = context.ha.getState(entityId);
+    if (["unknown", "unavailable", "none"].includes(String(state?.state || "").toLowerCase())) continue;
+    const entityPicture = state?.attributes?.entity_picture;
+    if (entityPicture) entityUrls.push(entityPicture);
+  }
+
+  if (context.ha.hasToken) urls.push(...entityUrls);
+  if (context.localCameraSnapshotUrl) urls.push(context.localCameraSnapshotUrl);
+  if (!context.ha.hasToken) urls.push(...entityUrls);
+
+  urls.push(...(context.config.cameraFallbackUrls || []));
 
   return [...new Set(urls)];
 }
