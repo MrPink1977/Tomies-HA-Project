@@ -8,6 +8,7 @@ const [
   { createPanelShell, panelButtonText },
   { renderCameraPanel },
   { renderFreyaPanel },
+  { renderMeshPanel },
   { renderIframePanel }
 ] = await Promise.all([
   import(`./config.js?v=${CACHE_BUST}`),
@@ -15,6 +16,7 @@ const [
   import(`./panels/base.js?v=${CACHE_BUST}`),
   import(`./panels/camera.js?v=${CACHE_BUST}`),
   import(`./panels/freya.js?v=${CACHE_BUST}`),
+  import(`./panels/mesh.js?v=${CACHE_BUST}`),
   import(`./panels/iframes.js?v=${CACHE_BUST}`)
 ]);
 
@@ -78,6 +80,8 @@ function renderPanels() {
       renderCameraPanel(panel, panelConfig, context);
     } else if (panelConfig.type === "freya") {
       renderFreyaPanel(panel, panelConfig, context);
+    } else if (panelConfig.type === "mesh") {
+      renderMeshPanel(panel, panelConfig, context);
     } else {
       renderIframePanel(panel, panelConfig, context);
     }

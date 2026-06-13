@@ -7,6 +7,8 @@ export class HomeAssistantClient extends EventTarget {
     this.socket = null;
     this.nextMessageId = 1;
     this.connected = false;
+    this.pendingMessages = new Map();
+    this.outbox = [];
   }
 
   get hasToken() {
@@ -15,6 +17,45 @@ export class HomeAssistantClient extends EventTarget {
 
   getState(entityId) {
     return this.states.get(entityId) || null;
+  }
+
+  sendCommand(type, payload = {}) {
+    return new Promise((resolve, reject) => {
+      const message = {
+        id: this.nextMessageId++,
+        type,
+        ...payload
+      };
+
+      this.pendingMessages.set(message.id, { resolve, reject });
+      this.sendOrQueue(message);
+    });
+  }
+
+  subscribeCommand(type, payload = {}, onEvent = () => {}) {
+    return new Promise((resolve, reject) => {
+      const message = {
+        id: this.nextMessageId++,
+        type,
+        ...payload
+      };
+
+      this.pendingMessages.set(message.id, {
+        resolve: () => {
+          this.pendingMessages.set(message.id, { onEvent });
+          resolve(() => {
+            this.pendingMessages.delete(message.id);
+            this.sendOrQueue({
+              id: this.nextMessageId++,
+              type: "unsubscribe_events",
+              subscription: message.id
+            });
+          });
+        },
+        reject
+      });
+      this.sendOrQueue(message);
+    });
   }
 
   async start() {
@@ -69,10 +110,15 @@ export class HomeAssistantClient extends EventTarget {
           type: "subscribe_events",
           event_type: "state_changed"
         }));
+        this.flushOutbox();
       }
 
       if (message.type === "event" && message.event?.event_type === "state_changed") {
         this.handleStateChanged(message.event.data);
+      }
+
+      if (message.id && this.pendingMessages.has(message.id)) {
+        this.handlePendingMessage(message);
       }
     });
 
@@ -92,6 +138,38 @@ export class HomeAssistantClient extends EventTarget {
     if (!data?.entity_id || !data.new_state) return;
     this.states.set(data.entity_id, data.new_state);
     this.dispatchEvent(new CustomEvent("state-changed", { detail: data }));
+  }
+
+  handlePendingMessage(message) {
+    const pending = this.pendingMessages.get(message.id);
+    if (!pending) return;
+
+    if (message.type === "event") {
+      pending.onEvent?.(message.event);
+      return;
+    }
+
+    this.pendingMessages.delete(message.id);
+    if (message.success === false) {
+      pending.reject?.(new Error(message.error?.message || "Home Assistant websocket command failed"));
+      return;
+    }
+    pending.resolve?.(message.result || {});
+  }
+
+  flushOutbox() {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+    for (const message of this.outbox.splice(0)) {
+      this.socket.send(JSON.stringify(message));
+    }
+  }
+
+  sendOrQueue(message) {
+    if (this.connected && this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(message));
+    } else {
+      this.outbox.push(message);
+    }
   }
 
   emitStatus(name, online) {

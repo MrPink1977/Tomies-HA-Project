@@ -16,6 +16,7 @@ export const appConfig = {
     { id: "ha", label: "HA Online", kind: "ha" },
     { id: "ollama", label: "Ollama", kind: "ollama", warnByDefault: true },
     { id: "mqtt", label: "MQTT", entity: "sensor.sem_b_active_power" },
+    { id: "mesh", label: "Mesh", entity: "sensor.active_nodes" },
     { id: "cameras", label: "Cameras", kind: "camera" }
   ],
   panels: [
@@ -52,12 +53,38 @@ export const appConfig = {
       ]
     },
     {
-      id: "freya",
-      accent: "freya",
-      type: "freya",
-      title: "FREYA",
-      subtitle: "NEURAL INTELLIGENCE // SYSTEM STATUS",
-      src: "freya-panel.html"
+      id: "field-mesh",
+      accent: "mesh",
+      type: "mesh",
+      title: "Field Mesh",
+      subtitle: "LORA RELAY // DRIVEWAY SENSOR NET",
+      meshNodes: [
+        {
+          id: "!f669c5d0",
+          label: "WarRoom-Base",
+          shortName: "BASE",
+          role: "MQTT / HA"
+        },
+        {
+          id: "!ba0dd6f4",
+          label: "TripleSixRanch",
+          shortName: "TSR1",
+          role: "ROOF RELAY"
+        },
+        {
+          id: "!9990826d",
+          label: "TripleSixRanch2",
+          shortName: "TSR2",
+          role: "DRIVE RELAY"
+        },
+        {
+          id: "!f66aa864",
+          label: "Driveway-PIR",
+          shortName: "DRWY",
+          role: "PRIVATE PIR",
+          private: true
+        }
+      ]
     }
   ]
 };
