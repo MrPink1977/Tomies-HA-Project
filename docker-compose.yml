@@ -27,7 +27,7 @@ services:
     environment:
       - TZ=America/New_York
       - HA_URL=http://homeassistant:8123
-      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
+      - HA_TOKEN=${HA_TOKEN}
       - MEDIA_PLAYER_ENTITY=media_player.home_assistant_voice_0a52fa_media_player
     networks:
       - ha_network
@@ -79,23 +79,6 @@ services:
     depends_on:
       - mosquitto
 
-  wyoming-openwakeword:
-    container_name: wyoming-openwakeword
-    image: rhasspy/wyoming-openwakeword:latest
-    volumes:
-      - ./openwakeword_data:/data
-      - ./config/custom_wakewords:/custom
-    ports:
-      - "10400:10400"
-    command: --preload-model hey_freya --custom-model-dir /custom
-    restart: unless-stopped
-    environment:
-      - TZ=America/New_York
-    networks:
-      - ha_network
-    depends_on:
-      - mosquitto
-
   ollama:
     container_name: ollama
     image: ollama/ollama:latest
@@ -120,7 +103,7 @@ services:
               capabilities: [gpu]
     entrypoint: ["/bin/sh", "/ollama-init.sh"]
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -226,13 +209,13 @@ services:
       - TZ=America/New_York
       - LDR_URL=http://local-deep-research:5000
       - LDR_USERNAME=admin
-      - LDR_PASSWORD=freyaresearch2026
+      - LDR_PASSWORD=${LDR_PASSWORD}
       - HA_URL=http://homeassistant:8123
-      - HA_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q
-      - HA_WEBHOOK_ID=research_report_done
-      - GMAIL_USER=tomie.pearson@gmail.com
-      - GMAIL_APP_PASS=prrcwiwwwtkfsbsb
-      - GMAIL_TO=tomie.pearson@gmail.com
+      - HA_TOKEN=${HA_TOKEN}
+      - HA_WEBHOOK_ID=${HA_WEBHOOK_ID}
+      - GMAIL_USER=${GMAIL_USER}
+      - GMAIL_APP_PASS=${GMAIL_APP_PASS}
+      - GMAIL_TO=${GMAIL_TO}
       - CHROMADB_URL=http://chromadb:8000
       - OLLAMA_URL=http://ollama:11434
     networks:
@@ -241,6 +224,132 @@ services:
     depends_on:
       - local-deep-research
       - homeassistant
+
+  frigate:
+    container_name: frigate
+    image: ghcr.io/blakeblackshear/frigate:stable
+    privileged: true
+    shm_size: "256mb"
+    restart: unless-stopped
+    ports:
+      - "8971:8971"
+      - "5001:5000"
+      - "8556:8554"
+      - "8557:8555/tcp"
+      - "8557:8555/udp"
+    volumes:
+      - ./frigate/config:/config
+      - ./frigate/media:/media/frigate
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - TZ=America/New_York
+      - FRIGATE_RTSP_USER=${FRIGATE_RTSP_USER:?Set FRIGATE_RTSP_USER in .env}
+      - FRIGATE_RTSP_PASSWORD=${FRIGATE_RTSP_PASSWORD:?Set FRIGATE_RTSP_PASSWORD in .env}
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+
+  double-take:
+    container_name: double-take
+    image: jakowenko/double-take:latest
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    volumes:
+      - ./double-take:/.storage
+    environment:
+      - TZ=America/New_York
+    networks:
+      - ha_network
+    depends_on:
+      - mosquitto
+      - frigate
+      - compreface-ui
+
+  compreface-postgres-db:
+    container_name: compreface-postgres-db
+    image: exadel/compreface-postgres-db:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=frs
+    volumes:
+      - ./compreface/postgres-data:/var/lib/postgresql/data
+    networks:
+      - ha_network
+
+  compreface-admin:
+    container_name: compreface-admin
+    image: exadel/compreface-admin:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/frs
+      - SPRING_PROFILES_ACTIVE=dev
+      - ENABLE_EMAIL_SERVER=false
+      - EMAIL_HOST=smtp.gmail.com
+      - EMAIL_USERNAME=
+      - EMAIL_FROM=
+      - EMAIL_PASSWORD=
+      - ADMIN_JAVA_OPTS=-Xmx1g
+      - MAX_FILE_SIZE=5MB
+      - MAX_REQUEST_SIZE=10MB
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-postgres-db
+      - compreface-api
+
+  compreface-api:
+    container_name: compreface-api
+    image: exadel/compreface-api:1.2.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_URL=jdbc:postgresql://compreface-postgres-db:5432/frs
+      - SPRING_PROFILES_ACTIVE=dev
+      - API_JAVA_OPTS=-Xmx4g
+      - SAVE_IMAGES_TO_DB=true
+      - MAX_FILE_SIZE=5MB
+      - MAX_REQUEST_SIZE=10MB
+      - CONNECTION_TIMEOUT=10000
+      - READ_TIMEOUT=60000
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-postgres-db
+
+  compreface-ui:
+    container_name: compreface-ui
+    image: exadel/compreface-fe:1.2.0
+    restart: unless-stopped
+    ports:
+      - "8001:80"
+    environment:
+      - CLIENT_MAX_BODY_SIZE=10M
+      - PROXY_READ_TIMEOUT=60000ms
+      - PROXY_CONNECT_TIMEOUT=10000ms
+    networks:
+      - ha_network
+    depends_on:
+      - compreface-api
+      - compreface-admin
+
+  compreface-core:
+    container_name: compreface-core
+    image: exadel/compreface-core:1.2.0
+    restart: unless-stopped
+    environment:
+      - ML_PORT=3000
+      - IMG_LENGTH_LIMIT=640
+      - UWSGI_PROCESSES=2
+      - UWSGI_THREADS=1
+    networks:
+      - ha_network
 
   # ── LiteLLM ─────────────────────────────────────────────────
   # Unified model proxy — sits in front of Ollama and exposes named model
@@ -278,8 +387,8 @@ services:
       - TZ=America/New_York
       - OLLAMA_BASE_URL=http://ollama:11434
       - OPENAI_API_BASE_URL=http://litellm:4000/v1
-      - OPENAI_API_KEY=freya-litellm-key
-      - WEBUI_SECRET_KEY=freyaopenwebui2026
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       - ENABLE_SIGNUP=false
       - DEFAULT_USER_ROLE=admin
       - WEBUI_NAME=Freya AI
@@ -289,6 +398,32 @@ services:
     depends_on:
       - ollama
       - litellm
+
+  # Open WebUI Pipelines plugin server
+  # Open WebUI connection URL from inside Docker: http://pipelines:9099
+  # Default API key: 0p3n-w3bu! unless PIPELINES_API_KEY is set in .env
+  pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: pipelines
+    ports:
+      - "9099:9099"
+    volumes:
+      - ./openwebui_pipelines:/app/pipelines
+      - ./config/freya_entity_aliases.yaml:/app/freya_entity_aliases.yaml:ro
+      - ./config/freya_command_groups.yaml:/app/freya_command_groups.yaml:ro
+    environment:
+      - TZ=America/New_York
+      - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
+      - HOME_ASSISTANT_URL=http://homeassistant:8123
+      - HOME_ASSISTANT_TOKEN=${HA_TOKEN}
+      - ENTITY_ALIASES_PATH=/app/freya_entity_aliases.yaml
+      - COMMAND_GROUPS_PATH=/app/freya_command_groups.yaml
+      - DRY_RUN=false
+    networks:
+      - ha_network
+    restart: unless-stopped
+    depends_on:
+      - homeassistant
 
 networks:
   ha_network:

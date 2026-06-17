@@ -1,0 +1,49 @@
+mqtt:
+  enabled: true
+  host: mosquitto
+  port: 1883
+  topic_prefix: frigate
+
+detectors:
+  cpu1:
+    type: cpu
+
+objects:
+  track:
+    - person
+
+record:
+  enabled: false
+
+snapshots:
+  enabled: true
+  clean_copy: true
+  timestamp: false
+  bounding_box: true
+  crop: true
+  height: 500
+  retain:
+    default: 7
+
+cameras:
+  front_door:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: 
+            rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@192.168.0.94:554/h264Preview_01_sub
+          roles:
+            - detect
+    detect:
+      enabled: true
+      width: 640
+      height: 480
+      fps: 5
+    mqtt:
+      enabled: true
+      timestamp: false
+      bounding_box: true
+      crop: true
+      quality: 100
+      height: 500
+version: 0.17-0

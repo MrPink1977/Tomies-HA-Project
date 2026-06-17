@@ -1,0 +1,64 @@
+# Freya host/GPU telemetry fed by freya_gpu_stats.py.
+#
+# These sensors intentionally use the clean entity IDs consumed by
+# config/www/freya-panel.html.
+
+---
+mqtt:
+  sensor:
+    - name: "GPU Utilization"
+      unique_id: freya_gpu_utilization
+      state_topic: "freya/system/gpu_utilization/state"
+      unit_of_measurement: "%"
+      icon: mdi:expansion-card
+      state_class: measurement
+
+    - name: "GPU Temperature"
+      unique_id: freya_gpu_temperature
+      state_topic: "freya/system/gpu_temperature/state"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      icon: mdi:thermometer
+      state_class: measurement
+
+    - name: "GPU VRAM Used"
+      unique_id: freya_gpu_vram_used
+      state_topic: "freya/system/gpu_vram_used/state"
+      unit_of_measurement: "GB"
+      icon: mdi:memory
+      state_class: measurement
+
+    - name: "GPU VRAM Total"
+      unique_id: freya_gpu_vram_total
+      state_topic: "freya/system/gpu_vram_total/state"
+      unit_of_measurement: "GB"
+      icon: mdi:memory
+      state_class: measurement
+
+    - name: "GPU VRAM Percent"
+      unique_id: freya_gpu_vram_percent
+      state_topic: "freya/system/gpu_vram_percent/state"
+      unit_of_measurement: "%"
+      icon: mdi:memory
+      state_class: measurement
+
+    - name: "Host CPU Percent"
+      unique_id: freya_host_cpu_percent
+      state_topic: "freya/system/host_cpu_percent/state"
+      unit_of_measurement: "%"
+      icon: mdi:cpu-64-bit
+      state_class: measurement
+
+    - name: "Host RAM Used"
+      unique_id: freya_host_ram_used
+      state_topic: "freya/system/host_ram_used/state"
+      unit_of_measurement: "GB"
+      icon: mdi:chip
+      state_class: measurement
+
+    - name: "Host RAM Percent"
+      unique_id: freya_host_ram_percent
+      state_topic: "freya/system/host_ram_percent/state"
+      unit_of_measurement: "%"
+      icon: mdi:chip
+      state_class: measurement

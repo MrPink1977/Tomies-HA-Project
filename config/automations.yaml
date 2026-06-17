@@ -1,19 +1,15 @@
 - id: '1769064036193'
-  alias: Driveway Alarm2
+  alias: Driveway Vehicle Alert
+  initial_state: true
   triggers:
   - trigger: mqtt
-    topic: msh/US/2/json/LongFast/!f669c5d0
+    topic: msh/US/2/json/LongFast/+
     value_template: '{{ value_json.type }}'
     payload: detection
-  conditions: []
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.payload_json.from == 4134185060 and trigger.payload_json.payload.text == "Driveway detected" }}'
   actions:
-  - wait_for_trigger:
-    - trigger: mqtt
-      topic: msh/US/2/json/LongFast/!f669c5d0
-      value_template: '{{ value_json.type }}'
-      payload: detection
-    timeout: 00:00:10
-    continue_on_timeout: false
   - action: assist_satellite.announce
     target:
       entity_id: assist_satellite.home_assistant_voice_0a52fa_assist_satellite
@@ -22,8 +18,10 @@
       preannounce: true
   - action: notify.mobile_app_tomies_iphone
     data:
-      message: Motion detected
+      message: I have detected a vehicle in the driveway.
       title: "\U0001F7E1 DRIVEWAY"
+  - delay:
+      minutes: 3
   mode: single
 - id: '1769559471401'
   alias: Motion@FrontDoor
@@ -72,35 +70,6 @@
     target:
       entity_id: light.porch_light
   mode: single
-- id: '1770328901584'
-  alias: Random Kanye Quote (Production - Clean)
-  triggers:
-  - minutes: /45
-    trigger: time_pattern
-  - event_type: kanye_quote_test
-    trigger: event
-  conditions:
-  - condition: template
-    value_template: "{{ trigger.platform != 'time_pattern'\n   or (now().strftime('%H:%M:%S')
-      >= '08:00:00'\n       and now().strftime('%H:%M:%S') <= '22:00:00') }}\n"
-  - condition: template
-    value_template: "{{ trigger.platform != 'time_pattern'\n   or (range(0,100) |
-      random) < 4 }}\n"
-  actions:
-  - data:
-      agent_id: 01KG1M8TEVYQNDCV2V0289RZBV
-      text: Give me one short Kanye West quote. Only the quote text.
-    response_variable: resp
-    action: conversation.process
-  - target:
-      entity_id: tts.elevenlabs_text_to_speech
-    data:
-      cache: false
-      media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
-      message: "{{ resp.response.speech.plain.speech\n   | regex_replace('^\"+|\"+$',
-        '')\n   | regex_replace(\"^'+|'+$\", '')\n   | trim }}\n"
-    action: tts.speak
-  mode: single
 - id: '1771842777094'
   alias: Porchlight
   description: 'Off'
@@ -141,21 +110,22 @@
   conditions: []
   actions:
   - alias: Set big lamps to dim warm
-    target:
-      entity_id:
-      - light.biglamp1
-      - light.biglamp2
     data:
       brightness_pct: 3
       color_temp_kelvin: 2200
     action: light.turn_on
+    target:
+      entity_id:
+      - light.big_lamp_one
+      - light.big_lamp_two
   - alias: Turn off remaining lights
     target:
       entity_id:
       - light.ceilingfanlight
-      - light.counterlamp1
-      - light.counterlamp2
+      - light.left_lamp
+      - light.right_lamp
     action: light.turn_off
+    data: {}
   - alias: Jarvis says goodnight
     action: assist_satellite.announce
     target:
@@ -171,15 +141,12 @@
     delay:
       hours: 1
   - alias: Turn off last lamps and TV after 1 hour
-    target:
-      entity_id:
-      - light.biglamp2
-      - light.biglamp1
     action: light.turn_off
     data: {}
-  - target:
-      entity_id: media_player.android_tv_192_168_0_128
-    action: media_player.turn_off
+    target:
+      entity_id:
+      - light.big_lamp_two
+      - light.big_lamp_one
   mode: single
 - alias: Wake Up Mode - Mon/Wed/Thu 10:30
   description: Gradual sunrise 30 min before 10:30 wake up
@@ -507,9 +474,14 @@
       entity_id: tts.elevenlabs_text_to_speech
     data:
       media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
-      cache: false
-      message: Your research report is ready. You can find it in the reports section
-        on the dashboard.
+      cache: true
+      message: Your research report is ready. I've sent you an email with the report
+        attatched!
+  - action: notify.mobile_app_tomies_iphone
+    metadata: {}
+    data:
+      title: Research Report
+      message: Your requested research is done!
   mode: single
 - id: freya_research_voice_trigger
   alias: Freya Research Voice Trigger
@@ -525,6 +497,8 @@
     - write a report on {query}
     - run a report on {query}
     - deep dive on {query}
+  - trigger: state
+    entity_id: stt.faster_whisper
   conditions: []
   actions:
   - action: script.freya_research_report
@@ -537,10 +511,10 @@
     target:
       entity_id: tts.elevenlabs_text_to_speech
     data:
+      cache: true
       media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
-      cache: false
-      message: Got it. Researching {{ trigger.slots.query }}. I'll let you know when
-        your report is ready.
+      message: i'll research some places on the inner webs and let you know what i
+        find!
   mode: single
 - id: freya_find_my_phone
   alias: Freya - Find My Phone
@@ -588,27 +562,246 @@
   actions:
   - action: script.go_to_command_screen
   mode: single
-- id: '1779077414849'
-  alias: ESP32 Snapshot When Reolink Detects Motion
-  description: ''
+- id: front_door_double_take_face_match
+  alias: Front Door - Double Take Face Match
+  description: Announces and notifies when Double Take publishes a front-door face result.
   triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.front_door_motion
-    - binary_sensor.motion_light_person
-    - binary_sensor.motion_light_animal
-    - binary_sensor.motion_light_vehicle
-    to: 'on'
+  - trigger: mqtt
+    topic: double-take/cameras/front_door
+  conditions: []
   actions:
-  - action: camera.snapshot
-    target:
-      entity_id: camera.esp32s3_cam
-    data:
-      filename: /config/www/esp32_latest.jpg
-  - action: notify.notify_mobile_app_estes
-    data:
-      title: ESP32 Camera Snapshot
-      message: Reolink detected motion.
+  - variables:
+      event_id: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {{ payload.id | default('') }}
+      face_name: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.match is defined and payload.match.name is defined %}
+          {{ payload.match.name }}
+        {% elif payload.matches is defined and payload.matches | count > 0 %}
+          {{ payload.matches[0].name | default('unknown') }}
+        {% elif payload.name is defined %}
+          {{ payload.name }}
+        {% else %}
+          unknown
+        {% endif %}
+      confidence: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.match is defined and payload.match.confidence is defined %}
+          {{ payload.match.confidence | float(0) }}
+        {% elif payload.matches is defined and payload.matches | count > 0 %}
+          {{ payload.matches[0].confidence | default(0) | float(0) }}
+        {% elif payload.confidence is defined %}
+          {{ payload.confidence | float(0) }}
+        {% else %}
+          0
+        {% endif %}
+      person_count: >-
+        {% set payload = trigger.payload_json if trigger.payload_json is defined else {} %}
+        {% if payload.counts is defined and payload.counts.person is defined %}
+          {{ payload.counts.person | int(0) }}
+        {% else %}
+          0
+        {% endif %}
+      face_alert: >-
+        {% set name = face_name | trim %}
+        {% set score = confidence | float(0) %}
+        {% set people = person_count | int(0) %}
+        {% if people > 0 and name not in ['unknown', 'none', ''] and score >= 70 %}
+          {{ name }} is at the front door.
+        {% elif people > 0 and score >= 65 %}
+          Unknown person at the front door.
+        {% else %}
+          {{ '' }}
+        {% endif %}
+  - if:
+    - condition: template
+      value_template: >-
+        {{ event_id | length > 0 and
+           event_id == states('input_text.front_door_face_last_alert_id') }}
+    then:
+    - stop: Front door face alert already sent for this event.
+  - if:
+    - condition: template
+      value_template: "{{ face_alert | trim | length > 0 }}"
+    then:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.front_door_face_last_alert_id
       data:
-        image: /local/esp32_latest.jpg
+        value: "{{ event_id }}"
+    - action: tts.speak
+      continue_on_error: true
+      target:
+        entity_id: tts.piper
+      data:
+        media_player_entity_id: media_player.home_assistant_voice_0a52fa_media_player
+        message: "{{ face_alert | trim }}"
+    - action: notify.mobile_app_tomies_iphone
+      data:
+        title: Front Door Face
+        message: "{{ face_alert | trim }} Confidence {{ confidence | float(0) | round(1) }}%."
+        data:
+          url: /front-door-faces/review
   mode: single
+- id: turn_on_big_lamps
+  alias: Turn on big lamps
+  description: Voice command to turn on both big lamps.
+  triggers:
+  - trigger: conversation
+    command:
+    - turn on big lamps
+    - turn on the big lamps
+    - big lamps on
+    - turn big lamps on
+  conditions: []
+  actions:
+  - action: light.turn_on
+    target:
+      entity_id:
+      - light.big_lamp_one
+      - light.big_lamp_two
+  - set_conversation_response: Turning on the big lamps.
+  mode: single
+- id: turn_off_big_lamps
+  alias: Turn off big lamps
+  description: Voice command to turn off both big lamps.
+  triggers:
+  - trigger: conversation
+    command:
+    - turn off big lamps
+    - turn off the big lamps
+    - big lamps off
+    - turn big lamps off
+  conditions: []
+  actions:
+  - action: light.turn_off
+    target:
+      entity_id:
+      - light.big_lamp_one
+      - light.big_lamp_two
+  - set_conversation_response: Turning off the big lamps.
+  mode: single
+- id: voice_open_awesome_table
+  alias: Voice - Open Awesome Table
+  trigger:
+    - platform: conversation
+      command:
+        - open the table
+        - open awesome table
+        - raise the table
+  action:
+    - service: rest_command.table_open
+    - set_conversation_response: Opening the table.
+
+- id: voice_close_awesome_table
+  alias: Voice - Close Awesome Table
+  trigger:
+    - platform: conversation
+      command:
+        - close the table
+        - close awesome table
+        - lower the table
+        - shut the table
+  action:
+    - service: rest_command.table_close
+    - set_conversation_response: Closing the table.
+
+- id: voice_stop_awesome_table
+  alias: Voice - Stop Awesome Table
+  trigger:
+    - platform: conversation
+      command:
+        - stop the table
+        - stop awesome table
+  action:
+    - service: rest_command.table_stop
+    - set_conversation_response: Stopping the table.
+# Voice: Add all-day calendar event
+
+- id: voice_add_all_day_calendar_event
+  alias: Voice - Add all-day calendar event
+  description: Adds a spoken all-day event to the 2026 calendar.
+  triggers:
+    - trigger: conversation
+      command:
+        - "add {event_name} to the calendar for {month} {day}"
+        - "add {event_name} to my calendar for {month} {day}"
+        - "put {event_name} on the calendar for {month} {day}"
+        - "schedule {event_name} for {month} {day}"
+  conditions: []
+  actions:
+    - variables:
+        raw_month: "{{ trigger.slots.month | lower }}"
+        raw_day: "{{ trigger.slots.day | lower }}"
+        event_title: "{{ trigger.slots.event_name }}"
+
+        month_num: >
+          {% set m = raw_month %}
+          {% if m in ['january','jan'] %}01
+          {% elif m in ['february','feb'] %}02
+          {% elif m in ['march','mar'] %}03
+          {% elif m in ['april','apr'] %}04
+          {% elif m in ['may'] %}05
+          {% elif m in ['june','jun'] %}06
+          {% elif m in ['july','jul'] %}07
+          {% elif m in ['august','aug'] %}08
+          {% elif m in ['september','sept','sep'] %}09
+          {% elif m in ['october','oct'] %}10
+          {% elif m in ['november','nov'] %}11
+          {% elif m in ['december','dec'] %}12
+          {% else %}00
+          {% endif %}
+
+        day_num: >
+          {% set d = raw_day %}
+          {% if d in ['first','one','1','1st'] %}01
+          {% elif d in ['second','two','2','2nd'] %}02
+          {% elif d in ['third','three','3','3rd'] %}03
+          {% elif d in ['fourth','four','4','4th'] %}04
+          {% elif d in ['fifth','five','5','5th'] %}05
+          {% elif d in ['sixth','six','6','6th'] %}06
+          {% elif d in ['seventh','seven','7','7th'] %}07
+          {% elif d in ['eighth','eight','8','8th'] %}08
+          {% elif d in ['ninth','nine','9','9th'] %}09
+          {% elif d in ['tenth','ten','10','10th'] %}10
+          {% elif d in ['eleventh','eleven','11','11th'] %}11
+          {% elif d in ['twelfth','twelve','12','12th'] %}12
+          {% elif d in ['thirteenth','thirteen','13','13th'] %}13
+          {% elif d in ['fourteenth','fourteen','14','14th'] %}14
+          {% elif d in ['fifteenth','fifteen','15','15th'] %}15
+          {% elif d in ['sixteenth','sixteen','16','16th'] %}16
+          {% elif d in ['seventeenth','seventeen','17','17th'] %}17
+          {% elif d in ['eighteenth','eighteen','18','18th'] %}18
+          {% elif d in ['nineteenth','nineteen','19','19th'] %}19
+          {% elif d in ['twentieth','twenty','20','20th'] %}20
+          {% elif d in ['twenty first','twenty-first','21','21st'] %}21
+          {% elif d in ['twenty second','twenty-second','22','22nd'] %}22
+          {% elif d in ['twenty third','twenty-third','23','23rd'] %}23
+          {% elif d in ['twenty fourth','twenty-fourth','24','24th'] %}24
+          {% elif d in ['twenty fifth','twenty-fifth','25','25th'] %}25
+          {% elif d in ['twenty sixth','twenty-sixth','26','26th'] %}26
+          {% elif d in ['twenty seventh','twenty-seventh','27','27th'] %}27
+          {% elif d in ['twenty eighth','twenty-eighth','28','28th'] %}28
+          {% elif d in ['twenty ninth','twenty-ninth','29','29th'] %}29
+          {% elif d in ['thirtieth','thirty','30','30th'] %}30
+          {% elif d in ['thirty first','thirty-first','31','31st'] %}31
+          {% else %}00
+          {% endif %}
+
+        start_day: "{{ '2026-' ~ month_num ~ '-' ~ day_num }}"
+        end_day: >
+          {{ (strptime('2026-' ~ month_num ~ '-' ~ day_num, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d') }}
+
+    - action: calendar.create_event
+      target:
+        entity_id: calendar.2026
+      data:
+        summary: "{{ event_title }}"
+        start_date: "{{ start_day }}"
+        end_date: "{{ end_day }}"
+
+    - set_conversation_response: >
+        Added {{ event_title }} to your calendar for {{ raw_month }} {{ raw_day }}.
+  mode: queued
+  max: 5

@@ -1,0 +1,20 @@
+# Explicit multi-entity command groups for Freya/Home Assistant routing.
+#
+# Keep these groups small and intentional. They allow phrases like
+# "turn on all bedroom lights" without asking Home Assistant's broad
+# conversation agent to guess which area/entities were meant.
+
+bedroom_lights:
+  domain: light
+  aliases:
+    - bedroom lights
+    - all bedroom lights
+    - all the bedroom lights
+    - every bedroom light
+    - lights in the bedroom
+  entity_ids:
+    - light.big_lamp_one
+    - light.big_lamp_two
+    - light.ceilingfanlight
+    - light.left_lamp
+    - light.right_lamp

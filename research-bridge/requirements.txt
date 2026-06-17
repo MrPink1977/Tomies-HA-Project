@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+markdown
+weasyprint
+beautifulsoup4
+pydantic

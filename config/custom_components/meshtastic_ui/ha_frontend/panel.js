@@ -72,6 +72,9 @@ class MeshtasticUiPanel extends LitElement {
       _nodeDialogFeedback: { type: String },
       _showReconnectBanner: { type: Boolean },
       _reconnecting: { type: Boolean },
+      _radios: { type: Array },
+      _selectedRadioId: { type: String },
+      _radioUnread: { type: Object },
     };
   }
 
@@ -103,6 +106,9 @@ class MeshtasticUiPanel extends LitElement {
     this._nodeDialogFeedback = "";
     this._showReconnectBanner = false;
     this._reconnecting = false;
+    this._radios = [];
+    this._selectedRadioId = localStorage.getItem("meshtastic_selected_radio") || null;
+    this._radioUnread = {};
     this._wsFailCount = 0;
     this._timeSeries = null;
     this._packetTypes = null;
@@ -193,6 +199,9 @@ class MeshtasticUiPanel extends LitElement {
 
   async _loadData() {
     this._deliveryStatuses = {};
+    // Load the list of configured radios first so subsequent commands can
+    // tag themselves with the right radio_id.
+    await this._loadRadios();
     await this._loadGateways();
     await this._loadMessages();
     await this._loadNodes();
@@ -206,7 +215,14 @@ class MeshtasticUiPanel extends LitElement {
   async _wsCommand(type, data = {}) {
     if (!this.hass) return null;
     try {
-      const result = await this.hass.callWS({ type, ...data });
+      // Inject the currently selected radio_id so backend routes the
+      // request to the right config entry. The /radios command itself
+      // doesn't take a radio_id; everything else does.
+      const payload = { type, ...data };
+      if (this._selectedRadioId && type !== "meshtastic_ui/radios") {
+        payload.radio_id = this._selectedRadioId;
+      }
+      const result = await this.hass.callWS(payload);
       if (this._wsFailCount > 0) {
         this._wsFailCount = 0;
         this._showReconnectBanner = false;
@@ -217,6 +233,47 @@ class MeshtasticUiPanel extends LitElement {
       if (this._wsFailCount >= 2) this._showReconnectBanner = true;
       return null;
     }
+  }
+
+  async _loadRadios() {
+    const result = await this._wsCommand("meshtastic_ui/radios");
+    if (!result) return;
+    this._radios = result.radios || [];
+    // Pick a sensible default selection.
+    const ids = this._radios.map((r) => r.radio_id);
+    if (!this._selectedRadioId || !ids.includes(this._selectedRadioId)) {
+      this._selectedRadioId = ids[0] || null;
+      if (this._selectedRadioId) {
+        localStorage.setItem("meshtastic_selected_radio", this._selectedRadioId);
+      }
+    }
+  }
+
+  async _switchRadio(radioId) {
+    if (!radioId || radioId === this._selectedRadioId) return;
+    this._selectedRadioId = radioId;
+    localStorage.setItem("meshtastic_selected_radio", radioId);
+    // Clear the red-dot for the radio we just switched to.
+    if (this._radioUnread[radioId]) {
+      const { [radioId]: _, ...rest } = this._radioUnread;
+      this._radioUnread = rest;
+    }
+    // Drop in-memory state so we don't render stale data while reloading.
+    this._messages = {};
+    this._channels = [];
+    this._dms = [];
+    this._channelNames = {};
+    this._nodes = {};
+    this._waypoints = {};
+    this._traceroutes = {};
+    this._gateways = [];
+    this._timeSeries = null;
+    this._packetTypes = null;
+    this._localNodeId = "";
+    // Re-establish subscriptions for the new radio.
+    await this._unsubscribe();
+    this._resetSubscriptions();
+    await this._loadData();
   }
 
   async _handleReconnectClick() {
@@ -324,6 +381,10 @@ class MeshtasticUiPanel extends LitElement {
       this[key] = unsub;
     };
 
+    // Subscribe without a radio_id so the panel receives events from every
+    // configured radio. _handleRealtimeMessage routes them — events from the
+    // selected radio render in the chat; others bump the per-radio unread
+    // counter so the gateway switcher can show a red dot.
     if (!this._unsubscribeFn) {
       conn.subscribeMessage(
         (event) => this._handleRealtimeMessage(event),
@@ -391,6 +452,24 @@ class MeshtasticUiPanel extends LitElement {
   _handleRealtimeMessage(data) {
     const key = data.type === "dm" ? data.partner : data.channel;
     if (!key) return;
+
+    // Route by entry_id: events from radios other than the active one don't
+    // touch the active radio's chat — they only bump that radio's unread
+    // counter, surfaced as a red dot on the gateway switcher (#multi-radio).
+    const eventEntryId = data.entry_id;
+    if (
+      eventEntryId &&
+      this._selectedRadioId &&
+      eventEntryId !== this._selectedRadioId
+    ) {
+      if (!data._outgoing) {
+        this._radioUnread = {
+          ...this._radioUnread,
+          [eventEntryId]: (this._radioUnread[eventEntryId] || 0) + 1,
+        };
+      }
+      return;
+    }
 
     if (!this._messages[key]) {
       this._messages[key] = [];
@@ -490,6 +569,57 @@ class MeshtasticUiPanel extends LitElement {
     }
   }
 
+  async _onReconnect() {
+    await this._handleReconnectClick();
+  }
+
+  async _onClearConversation(e) {
+    const conv = e.detail?.conversation;
+    if (!conv) return;
+    const result = await this._wsCommand("meshtastic_ui/clear_messages", { conversation: conv });
+    if (result == null) return;
+
+    // Drop messages locally and refresh the conversation list.
+    const { [conv]: _dropped, ...rest } = this._messages;
+    this._messages = rest;
+    this._channels = this._channels.filter((c) => c !== conv);
+    this._dms = this._dms.filter((d) => d !== conv);
+    if (this._unreadCounts[conv]) {
+      const { [conv]: _u, ...restUnread } = this._unreadCounts;
+      this._unreadCounts = restUnread;
+      localStorage.setItem("meshtastic_unread", JSON.stringify(this._unreadCounts));
+    }
+    if (this._selectedConversation === conv) {
+      this._selectedConversation = "";
+    }
+    this.requestUpdate();
+  }
+
+  async _onStorageCleared(e) {
+    const kind = e.detail?.kind;
+    if (kind === "clear_messages" || kind === "clear_all") {
+      this._messages = {};
+      this._channels = [];
+      this._dms = [];
+      this._unreadCounts = {};
+      localStorage.setItem("meshtastic_unread", "{}");
+      await this._loadMessages();
+    }
+    if (kind === "clear_nodes" || kind === "clear_all") {
+      this._nodes = {};
+      this._traceroutes = {};
+      this._favoriteNodes = [];
+      this._ignoredNodes = [];
+      await this._loadNodes();
+      await this._loadTraceroutes();
+    }
+    if (kind === "clear_all") {
+      this._waypoints = {};
+      await this._loadWaypoints();
+    }
+    this.requestUpdate();
+  }
+    
   _onSelectConversation(e) {
     const conv = e.detail.conversation;
     this._selectedConversation = conv;
@@ -676,6 +806,7 @@ class MeshtasticUiPanel extends LitElement {
         user-select: none;
         display: flex;
         align-items: center;
+        white-space: nowrap;
       }
 
       .tab:hover {
@@ -898,9 +1029,17 @@ class MeshtasticUiPanel extends LitElement {
       .traceroute-error ha-icon { --mdc-icon-size: 36px; margin-bottom: 12px; opacity: 0.5; display: block; }
 
       @media (max-width: 600px) {
-        .tabs { padding: 0 4px; }
-        .tab { padding: 10px 12px; font-size: 13px; }
+        .tabs {
+          padding: 0 4px;
+          gap: 0;
+          overflow-x: auto;
+          scrollbar-width: none;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab { padding: 10px 8px; font-size: 13px; flex-shrink: 0; }
         .content { padding: 8px 8px 0; }
+        .bell-icon { padding: 8px; flex-shrink: 0; }
+        .menu-btn { flex-shrink: 0; }
       }
     `;
   }
@@ -958,7 +1097,13 @@ class MeshtasticUiPanel extends LitElement {
           .packetTypes=${this._packetTypes}
           .chartWindow=${this._chartWindow}
           .bucketInterval=${this._tsBucketInterval || 10}
+          .reconnecting=${this._reconnecting}
+          .radios=${this._radios}
+          .selectedRadioId=${this._selectedRadioId}
+          .radioUnread=${this._radioUnread}
           @chart-window-change=${this._onChartWindowChange}
+          @reconnect=${this._onReconnect}
+          @switch-radio=${(e) => this._switchRadio(e.detail.radio_id)}
         ></mesh-radio-tab>`;
       case "messages":
         return html`
@@ -973,6 +1118,7 @@ class MeshtasticUiPanel extends LitElement {
             .unreadCounts=${this._unreadCounts}
             @select-conversation=${this._onSelectConversation}
             @send-message=${this._onSendMessage}
+            @clear-conversation=${this._onClearConversation}
           ></mesh-messages-tab>
         `;
       case "nodes":
@@ -994,6 +1140,7 @@ class MeshtasticUiPanel extends LitElement {
           <mesh-settings-tab
             .hass=${this.hass}
             .wsCommand=${(type, data) => this._wsCommand(type, data)}
+            @storage-cleared=${this._onStorageCleared}
           ></mesh-settings-tab>
         `;
       default:

@@ -1,0 +1,54 @@
+mqtt:
+  sensor:
+    - name: Front Door Face Match
+      unique_id: front_door_face_match
+      state_topic: double-take/cameras/front_door
+      value_template: >-
+        {% if value_json.match is defined and value_json.match.name is defined %}
+          {{ value_json.match.name }}
+        {% elif value_json.matches is defined and value_json.matches | count > 0 %}
+          {{ value_json.matches[0].name | default('unknown') }}
+        {% elif value_json.name is defined %}
+          {{ value_json.name }}
+        {% else %}
+          unknown
+        {% endif %}
+      json_attributes_topic: double-take/cameras/front_door
+      icon: mdi:face-recognition
+
+    - name: Front Door Face Confidence
+      unique_id: front_door_face_confidence
+      state_topic: double-take/cameras/front_door
+      value_template: >-
+        {% if value_json.match is defined and value_json.match.confidence is defined %}
+          {{ value_json.match.confidence }}
+        {% elif value_json.matches is defined and value_json.matches | count > 0 %}
+          {{ value_json.matches[0].confidence | default(0) }}
+        {% elif value_json.confidence is defined %}
+          {{ value_json.confidence }}
+        {% else %}
+          0
+        {% endif %}
+      unit_of_measurement: "%"
+      icon: mdi:percent
+
+input_text:
+  front_door_face_last_alert_id:
+    name: Front Door Face Last Alert ID
+    max: 128
+
+template:
+  - sensor:
+      - name: Front Door Face Summary
+        unique_id: front_door_face_summary
+        icon: mdi:account-search
+        state: >-
+          {% set name = states('sensor.front_door_face_match') %}
+          {% set confidence = states('sensor.front_door_face_confidence') | float(0) %}
+          {% if name not in ['unknown', 'unavailable', 'none', ''] and confidence > 0 %}
+            {{ name }} at the front door ({{ confidence | round(1) }}%)
+          {% elif confidence > 0 %}
+            Unknown person at the front door ({{ confidence | round(1) }}%)
+          {% else %}
+            No face result yet
+          {% endif %}

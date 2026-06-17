@@ -1,0 +1,11 @@
+{
+  "mcpProxy": {
+    "addr": ":9090",
+    "name": "homeassistant-mcp-proxy",
+    "version": "1.0.0",
+    "options": { "logEnabled": true, "panicIfInvalid": false }
+  },
+  "mcpServers": {
+    "wikipedia": { "url": "http://wikipedia-mcp:8080/sse" }
+  }
+}

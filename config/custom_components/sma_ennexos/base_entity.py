@@ -8,6 +8,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
+    CONF_USE_SSL,
     DEVICE_MANUFACTURER,
     DOMAIN,
     LOGGER,
@@ -25,7 +26,8 @@ class SMAEntity(CoordinatorEntity[SMADataCoordinator]):
         channel_id: str,
         component_info: ComponentInfo,
     ) -> None:
-        """Initialize common entity attributes.
+        """
+        Initialize common entity attributes.
 
         base entity handles device and entity id generation and device info.
         """
@@ -41,7 +43,7 @@ class SMAEntity(CoordinatorEntity[SMADataCoordinator]):
 
         # set device info for the entity
         conf_url = (
-            f"https://{component_info.ip_address}/"
+            f"{'https' if coordinator.config_entry.data[CONF_USE_SSL] else 'http'}://{component_info.ip_address}/"
             if component_info.ip_address
             else None
         )

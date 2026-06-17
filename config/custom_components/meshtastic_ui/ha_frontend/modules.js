@@ -80,7 +80,47 @@ class ModuleConfigPanel extends LitElement {
       settingsStyles,
       formStyles,
       saveBarStyles,
-      css` :host { display: block; } `,
+      css`
+        :host { display: block; }
+        .info-banner {
+          background: var(--secondary-background-color);
+          border-left: 3px solid var(--info-color, #2196f3);
+          padding: 10px 12px;
+          border-radius: 4px;
+          font-size: 12px;
+          line-height: 1.5;
+          margin-bottom: 12px;
+          color: var(--primary-text-color);
+        }
+        .info-banner code {
+          background: var(--code-editor-background-color, rgba(0,0,0,0.15));
+          padding: 1px 5px;
+          border-radius: 3px;
+          font-size: 11px;
+          font-family: var(--code-font-family, monospace);
+        }
+        .quick-presets {
+          margin-top: 8px;
+          display: flex;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+        .quick-preset {
+          padding: 3px 10px;
+          border-radius: 12px;
+          border: 1px solid var(--divider-color);
+          background: var(--card-background-color);
+          color: var(--primary-text-color);
+          font-size: 11px;
+          font-weight: 600;
+          cursor: pointer;
+        }
+        .quick-preset:hover {
+          background: var(--primary-color);
+          color: var(--text-primary-color);
+          border-color: var(--primary-color);
+        }
+      `,
     ];
   }
 
@@ -166,7 +206,7 @@ class MeshSettingsMqtt extends ModuleConfigPanel {
                   @change=${(e) => this._updateField("port", e.detail.value)}></mesh-number-input>
                 <mesh-text-input label="Username" .value=${d.username || ""}
                   @change=${(e) => this._updateField("username", e.detail.value)}></mesh-text-input>
-                <mesh-text-input label="Password" .value=${d.password || ""}
+                <mesh-text-input label="Password" type="password" .value=${d.password || ""}
                   @change=${(e) => this._updateField("password", e.detail.value)}></mesh-text-input>
                 <mesh-text-input label="Root Topic" description="MQTT root topic"
                   .value=${d.root || ""} placeholder="msh"
@@ -449,9 +489,22 @@ class MeshSettingsTelemetry extends ModuleConfigPanel {
         <div class="settings-panel-body">
           <div class="settings-section">
             ${this._sectionTitle("Device Metrics")}
+            <div class="info-banner">
+              <strong>Charts not updating?</strong> Firmware 2.7.x defaults this to <code>3600</code> (1 hour),
+              which is why battery / channel utilization / airtime graphs may look frozen.
+              For a live dashboard, set this to <code>300</code> (5 min) or <code>600</code> (10 min).
+              <div class="quick-presets">
+                <button class="quick-preset" type="button"
+                  @click=${() => this._updateField("device_update_interval", 300)}>5 min</button>
+                <button class="quick-preset" type="button"
+                  @click=${() => this._updateField("device_update_interval", 600)}>10 min</button>
+                <button class="quick-preset" type="button"
+                  @click=${() => this._updateField("device_update_interval", 1800)}>30 min</button>
+              </div>
+            </div>
             <div class="form-grid">
               <mesh-number-input label="Update Interval (secs)"
-                description="How often to broadcast device metrics (0 = default)"
+                description="How often the radio broadcasts device metrics. 0 uses the firmware default (3600s on fw 2.7.x)."
                 .value=${d.device_update_interval ?? 0} .min=${0}
                 @change=${(e) => this._updateField("device_update_interval", e.detail.value)}></mesh-number-input>
             </div>

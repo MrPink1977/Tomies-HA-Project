@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FREYA // LIVE OPS</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090c;
+  --panel:#0d1218;
+  --panel2:#101821;
+  --line:rgba(255,149,0,.26);
+  --line2:rgba(130,160,190,.2);
+  --amber:#ff9500;
+  --amber2:#ffc15d;
+  --green:#31f58b;
+  --blue:#58aaff;
+  --cyan:#64ffe6;
+  --red:#ff4b55;
+  --accent:#64ffe6;
+  --text:#dce9f6;
+  --muted:#7d93a7;
+  --dim:#405568;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:"Rajdhani",system-ui,sans-serif}
+body:after{content:"";position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.18) 2px,rgba(0,0,0,.18) 4px);pointer-events:none;z-index:50}
+.shell{height:100vh;display:grid;grid-template-columns:1.2fr 1fr 1fr;grid-template-rows:1.16fr .84fr 86px;gap:5px;padding:5px;background:linear-gradient(180deg,#07090c,#050608)}
+.card{position:relative;overflow:hidden;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel),#080b0f);min-width:0;min-height:0}
+.card:before,.card:after{content:"";position:absolute;width:14px;height:14px;border-color:rgba(255,149,0,.48);border-style:solid;pointer-events:none}
+.card:before{top:0;left:0;border-width:1px 0 0 1px}
+.card:after{right:0;bottom:0;border-width:0 1px 1px 0}
+.head{height:25px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 8px;border-bottom:1px solid rgba(100,255,230,.2);background:linear-gradient(90deg,rgba(100,255,230,.055),rgba(100,255,230,.012))}
+.h{font-family:"Bebas Neue",sans-serif;font-size:14px;letter-spacing:2.4px;color:var(--accent);text-shadow:0 0 8px rgba(100,255,230,.28);white-space:nowrap}
+.sub{font-family:"Share Tech Mono",monospace;font-size:8px;letter-spacing:1px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mode-chip{font-family:"Share Tech Mono",monospace;font-size:8px;letter-spacing:1px;color:var(--green);border:1px solid rgba(49,245,139,.25);background:rgba(49,245,139,.045);padding:1px 6px;white-space:nowrap}
+.ai{grid-column:1/2;grid-row:1/3}
+.ai-body{height:calc(100% - 25px);display:grid;grid-template-rows:1fr auto;gap:6px;padding:8px}
+.ai-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.pill{border:1px solid var(--line2);background:rgba(255,255,255,.025);min-height:28px;padding:4px 6px;display:grid;grid-template-columns:auto 1fr;gap:7px;align-items:center}
+.pill span{font-size:8px;color:var(--muted);letter-spacing:1px}
+.pill b{font-size:11px;font-weight:400;color:var(--text);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.pill.hot b{color:var(--green)}
+.thought{font-family:"Share Tech Mono",monospace;border:1px solid rgba(100,255,230,.2);background:rgba(100,255,230,.025);min-height:0;padding:8px 9px;font-size:12px;line-height:1.48;color:#a8bfd0;overflow:hidden}
+.thought .t{color:var(--cyan)}
+.thought .ok{color:var(--green)}
+.thought .warn{color:var(--amber2)}
+.thought .bad{color:var(--red)}
+.thought .model{color:var(--cyan)}
+.thought .system{color:var(--blue)}
+.thought .ha{color:var(--green)}
+.activity{grid-column:2/4;grid-row:1/2}
+.activity-body{height:calc(100% - 25px);display:grid;grid-template-columns:.82fr 1.18fr;gap:5px;padding:6px}
+.models{display:flex;flex-direction:column;gap:5px;min-width:0;overflow:hidden}
+.model{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;border-left:3px solid var(--green);background:rgba(49,245,139,.045);padding:7px 7px;min-height:42px}
+.model-name{font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-meta{font-size:8px;color:var(--muted);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:9px;color:var(--green);letter-spacing:1px}
+.llm-detail{border:1px solid rgba(100,255,230,.18);background:rgba(100,255,230,.025);padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:5px;min-height:0}
+.llm-detail .wide{grid-column:1/3}
+.llm-k{font-size:7px;color:var(--muted);letter-spacing:1.2px;white-space:nowrap}
+.llm-v{font-family:"Share Tech Mono",monospace;font-size:9px;color:var(--text);letter-spacing:.6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.llm-v.hot{color:var(--cyan)}
+.ops{font-family:"Share Tech Mono",monospace;border:1px solid var(--line2);background:rgba(255,255,255,.02);padding:6px 8px;font-size:11px;line-height:1.42;color:#9fb5c5;overflow:hidden}
+.ops .time{color:var(--cyan)}
+.ops .ok{color:var(--green)}
+.ops .warn{color:var(--amber2)}
+.ops .bad{color:var(--red)}
+.ops .type{display:inline-block;min-width:44px;color:var(--muted);letter-spacing:1px}
+.ops .model{color:var(--cyan)}
+.ops .system{color:var(--blue)}
+.ops .ha{color:var(--green)}
+.ops .runtime{color:var(--amber2)}
+.pressure{grid-column:2/4;grid-row:2/3}
+.pressure-grid{height:calc(100% - 25px);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:6px}
+.metric{border:1px solid var(--line2);background:rgba(255,255,255,.025);padding:6px;display:flex;flex-direction:column;justify-content:center;min-width:0;min-height:0}
+.k{font-size:8px;letter-spacing:1px;color:var(--muted);white-space:nowrap}
+.v{font-family:"Bebas Neue",sans-serif;font-size:clamp(20px,4.2vw,27px);letter-spacing:.6px;line-height:1;color:var(--text);white-space:nowrap;overflow:visible;text-overflow:clip}
+.green{color:var(--green)}.amber{color:var(--amber2)}.blue{color:var(--blue)}.red{color:var(--red)}.cyan{color:var(--cyan)}
+.bar{height:5px;border-radius:20px;background:#17212b;overflow:hidden;margin:7px 0 4px}
+.fill{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .22s ease}
+.fill.green{background:linear-gradient(90deg,#16834c,var(--green))}
+.fill.amber{background:linear-gradient(90deg,#915900,var(--amber2))}
+.fill.red{background:linear-gradient(90deg,#7a151d,var(--red))}
+.tiny{font-size:7px;color:var(--dim);letter-spacing:.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pipeline{grid-column:1/3;grid-row:3/4}
+.svc-grid{height:calc(100% - 25px);display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:5px}
+.svc,.auto-item{border:1px solid var(--line2);background:rgba(255,255,255,.025);padding:5px;min-width:0;overflow:hidden}
+.svc-name,.auto-name{font-family:"Bebas Neue",sans-serif;font-size:11px;letter-spacing:1.6px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svc-state,.auto-state{font-size:8px;color:var(--muted);letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.svc.online,.auto-item.on{border-color:rgba(49,245,139,.34);background:rgba(49,245,139,.04)}
+.svc.online .svc-state,.auto-item.on .auto-state{color:var(--green)}
+.svc.offline,.auto-item.bad{border-color:rgba(255,75,85,.34);background:rgba(255,75,85,.04)}
+.svc.offline .svc-state,.auto-item.bad .auto-state{color:var(--red)}
+.svc.warn,.auto-item.off{border-color:rgba(255,149,0,.3);background:rgba(255,149,0,.035)}
+.svc.warn .svc-state,.auto-item.off .auto-state{color:var(--amber2)}
+.auto{grid-column:3/4;grid-row:3/4}
+.auto-grid{height:calc(100% - 25px);display:grid;grid-template-columns:repeat(2,1fr);gap:5px;padding:5px}
+.empty{height:100%;display:flex;align-items:center;justify-content:center;border:1px dashed var(--line2);color:var(--dim);font-size:10px;letter-spacing:1px;text-align:center;padding:10px}
+@media(max-width:700px){
+  .shell{grid-template-rows:1.16fr .84fr 68px;gap:4px;padding:4px}
+  .head{height:22px;padding:0 6px}
+  .h{font-size:11px;letter-spacing:2px}
+  .sub{font-size:7px}
+  .ai-body{gap:4px;padding:6px;grid-template-rows:1fr 20px}
+  .ai-meta{gap:3px}
+  .pill{min-height:20px;padding:2px 5px;grid-template-columns:38px 1fr}
+  .pill span{font-size:7px}
+  .pill b{font-size:9px}
+  .thought{font-size:8px;line-height:1.35;padding:4px 5px}
+  .activity-body{gap:4px;padding:4px}
+  .model{min-height:38px;padding:5px}
+  .model-name{font-size:9px}
+  .model-meta,.tag{font-size:7px}
+  .llm-detail{padding:4px;gap:3px}
+  .llm-k{font-size:6px}
+  .llm-v{font-size:7px}
+  .ops{font-size:8px;line-height:1.33;padding:4px 5px}
+  .ops .type{min-width:32px}
+  .pressure-grid{gap:3px;padding:4px}
+  .metric{padding:3px}
+  .k{font-size:7px}
+  .v{font-size:18px;letter-spacing:.3px}
+  .bar{height:3px;margin:4px 0 2px}
+  .tiny{font-size:6px}
+  .svc-grid{grid-template-columns:repeat(6,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:3px;padding:3px}
+  .svc,.auto-item{padding:3px}
+  .svc-name,.auto-name{font-size:8px;letter-spacing:1px}
+  .svc-state,.auto-state{font-size:6px;margin-top:1px}
+  .auto-grid{gap:3px;padding:3px}
+}
+@media(max-width:430px){
+  .shell{grid-template-columns:1fr;grid-template-rows:repeat(5,minmax(0,1fr))}
+  .ai,.activity,.pressure,.pipeline,.auto{grid-column:1/2;grid-row:auto}
+  .activity-body{grid-template-columns:1fr}
+  .pressure-grid{grid-template-columns:repeat(2,1fr)}
+  .svc-grid{grid-template-columns:repeat(2,1fr)}
+  .auto-grid{grid-template-columns:1fr}
+}
+@media(max-height:560px){
+  .llm-detail{display:none}
+}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="card ai">
+    <div class="head"><div class="h">AI STATE</div><div id="coreMode" class="mode-chip">BOOTING</div><div class="sub">VOICE PE / FREYA</div></div>
+    <div class="ai-body">
+      <div class="thought" id="thoughtWindow"></div>
+      <div class="ai-meta">
+        <div class="pill hot"><span>ASSIST</span><b id="assistState">--</b></div>
+        <div class="pill hot"><span>CONVO</span><b id="convoState">--</b></div>
+        <div class="pill"><span>MODEL</span><b id="modelState">--</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card activity">
+    <div class="head"><div class="h">OLLAMA ACTIVITY</div><div id="ollamaVersion" class="sub">CHECKING</div></div>
+    <div class="activity-body">
+      <div id="modelList" class="models"><div class="empty">QUERYING /API/PS</div></div>
+      <div id="opsLog" class="ops"></div>
+    </div>
+  </section>
+
+  <section class="card pressure">
+    <div class="head"><div class="h">SYSTEM PRESSURE</div><div class="sub" id="resourceFresh">WAITING FOR TELEMETRY</div></div>
+    <div class="pressure-grid">
+      <div class="metric"><div class="k">GPU</div><div id="gpuUtil" class="v green">--%</div><div class="bar"><div id="gpuUtilBar" class="fill green"></div></div><div id="gpuText" class="tiny">NVIDIA LOAD</div></div>
+      <div class="metric"><div class="k">VRAM</div><div id="vramPct" class="v blue">--%</div><div class="bar"><div id="vramBar" class="fill"></div></div><div id="vramText" class="tiny">-- / -- GB</div></div>
+      <div class="metric"><div class="k">TEMP</div><div id="gpuTemp" class="v amber">--C</div><div class="bar"><div id="gpuTempBar" class="fill amber"></div></div><div id="gpuThermal" class="tiny">THERMAL --</div></div>
+      <div class="metric"><div class="k">CPU</div><div id="cpuPct" class="v cyan">--%</div><div class="bar"><div id="cpuBar" class="fill"></div></div><div id="cpuText" class="tiny">HOST CPU</div></div>
+      <div class="metric"><div class="k">RAM</div><div id="ramPct" class="v">--%</div><div class="bar"><div id="ramBar" class="fill"></div></div><div id="ramText" class="tiny">-- GB</div></div>
+    </div>
+  </section>
+
+  <section class="card pipeline">
+    <div class="head"><div class="h">PIPELINE</div><div class="sub">VOICE / STT / TTS / AI</div></div>
+    <div id="svcGrid" class="svc-grid"></div>
+  </section>
+
+  <section class="card auto">
+    <div class="head"><div class="h">AUTOMATIONS</div><div class="sub">FREYA CONTROL</div></div>
+    <div id="autoGrid" class="auto-grid"></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const HA_TOKEN = getHaToken();
+const HA_WS = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/api/websocket`;
+const HOST = location.hostname || "localhost";
+const OLLAMA_URL = `http://${HOST}:11434`;
+
+const ENTITIES = {
+  gpuUtil:["sensor.gpu_utilization","sensor.fbivan_gpuload"],
+  gpuTemp:["sensor.gpu_temperature","sensor.fbivan_gputemperature"],
+  vramUsed:["sensor.gpu_vram_used"],
+  vramTotal:["sensor.gpu_vram_total"],
+  vramPct:["sensor.gpu_vram_percent"],
+  cpuPct:["sensor.host_cpu_percent","sensor.fbivan_cpuload"],
+  ramUsed:["sensor.host_ram_used"],
+  ramPct:["sensor.host_ram_percent","sensor.fbivan_memoryusage"],
+  assist:["assist_satellite.home_assistant_voice_0a52fa_assist_satellite"],
+  media:["media_player.home_assistant_voice_0a52fa_media_player"],
+  led:["light.home_assistant_voice_0a52fa_led_ring"],
+  mute:["switch.home_assistant_voice_0a52fa_mute"],
+  convoA:["input_boolean.freya_convo_active"],
+  convoB:["input_boolean.freya_conversation_active"],
+  follow:["input_number.freya_follow_up_count"]
+};
+
+const SERVICES = [
+  ["OLLAMA","internal:ollama"],
+  ["ASSIST",ENTITIES.assist[0]],
+  ["MEDIA",ENTITIES.media[0]],
+  ["LED RING",ENTITIES.led[0]],
+  ["WHISPER","stt.faster_whisper"],
+  ["PIPER","tts.piper"],
+  ["MUTE",ENTITIES.mute[0]],
+  ["HA CONV","conversation.home_assistant"],
+  ["OLLAMA CONV","conversation.ollama_conversation"],
+  ["CONVO A",ENTITIES.convoA[0]],
+  ["CONVO B",ENTITIES.convoB[0]]
+];
+
+const AUTOMATIONS = [
+  ["RESEARCH","automation.freya_research_voice_trigger"],
+  ["FIND PHONE","automation.freya_find_my_phone"],
+  ["ENGINE","automation.freya_conversation_mode_engine"],
+  ["CLOSE","automation.freya_conversation_mode_close"]
+];
+
+const stateByEntity = new Map();
+const lastState = new Map();
+let servicesStatus = {ha:false, ws:false, ollama:false};
+let opsLines = [];
+let thoughtLines = [];
+let wsMsgId = 1;
+let loadedModels = [];
+let lastVramAlertLevel = "ok";
+let lastCpuAlertLevel = "ok";
+
+function getHaToken(){
+  try{
+    const raw = localStorage.getItem("hassTokens");
+    return raw ? JSON.parse(raw).access_token || null : null;
+  }catch{
+    return null;
+  }
+}
+
+function time(){ return new Date().toLocaleTimeString("en-US",{hour12:false}); }
+function setText(id, value){ const el = $(id); if(el) el.textContent = value; }
+function clamp(value){ const n = Number(value); return Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; }
+function asNum(state){ const n = parseFloat(state?.state); return Number.isFinite(n) ? n : null; }
+function fmtState(value){ return value === undefined || value === null ? "--" : String(value).toUpperCase(); }
+function escapeHtml(value){ return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function setClass(id, classes){
+  const el = $(id);
+  if(!el) return;
+  for(const [name, enabled] of Object.entries(classes)) el.classList.toggle(name, enabled);
+}
+
+function first(role){
+  for(const entity of ENTITIES[role] || []){
+    const state = stateByEntity.get(entity);
+    if(state && state.state !== "unknown" && state.state !== "unavailable") return state;
+  }
+  return null;
+}
+
+function setBar(id, value){ const el = $(id); if(el) el.style.width = `${clamp(value)}%`; }
+
+function pushOps(message, cls="ok", type="SYS"){
+  opsLines.push(`<span class="time">${time()}</span> <span class="type ${cls}">${escapeHtml(type)}</span> <span class="${cls}">${escapeHtml(message)}</span>`);
+  opsLines = opsLines.slice(-12);
+  $("opsLog").innerHTML = opsLines.join("<br>");
+}
+
+function pushThought(message, cls="ok"){
+  thoughtLines.push(`<span class="t">${time()}</span> <span class="${cls}">${escapeHtml(message)}</span>`);
+  thoughtLines = thoughtLines.slice(-9);
+  $("thoughtWindow").innerHTML = thoughtLines.join("<br>");
+}
+
+function updateResources(){
+  const gpu = asNum(first("gpuUtil"));
+  const temp = asNum(first("gpuTemp"));
+  const vramPct = asNum(first("vramPct"));
+  const vramUsed = asNum(first("vramUsed"));
+  const vramTotal = asNum(first("vramTotal"));
+  const cpu = asNum(first("cpuPct"));
+  const ram = asNum(first("ramPct"));
+  const ramUsed = asNum(first("ramUsed"));
+
+  setText("gpuUtil", gpu === null ? "--%" : `${Math.round(gpu)}%`);
+  setBar("gpuUtilBar", gpu);
+  setText("gpuText", gpu === null ? "NVIDIA LOAD --" : `NVIDIA LOAD ${gpu.toFixed(1)}%`);
+  setText("gpuTemp", temp === null ? "--C" : `${Math.round(temp)}C`);
+  setBar("gpuTempBar", temp === null ? 0 : temp / 90 * 100);
+  setText("gpuThermal", temp === null ? "THERMAL --" : temp >= 80 ? "THERMAL HOT" : temp >= 68 ? "THERMAL WARM" : "THERMAL OK");
+  setText("vramPct", vramPct === null ? "--%" : `${Math.round(vramPct)}%`);
+  setBar("vramBar", vramPct);
+  const vramHot = vramPct !== null && vramPct >= 90;
+  const vramWarn = vramPct !== null && vramPct >= 80 && !vramHot;
+  setClass("vramPct", {red:vramHot, amber:vramWarn, blue:!vramHot && !vramWarn});
+  setClass("vramBar", {red:vramHot, amber:vramWarn});
+  setClass("vramText", {red:vramHot, amber:vramWarn});
+  setText("vramText", vramUsed !== null && vramTotal !== null ? `${vramUsed.toFixed(1)} / ${vramTotal.toFixed(1)} GB // ${vramPct === null ? "--" : vramPct.toFixed(1)}%` : "-- / -- GB");
+  setText("cpuPct", cpu === null ? "--%" : `${Math.round(cpu)}%`);
+  setBar("cpuBar", cpu);
+  setText("cpuText", cpu === null ? "HOST CPU --" : `HOST CPU ${cpu.toFixed(1)}%`);
+  setText("ramPct", ram === null ? "--%" : `${Math.round(ram)}%`);
+  setBar("ramBar", ram);
+  setText("ramText", ramUsed === null ? "-- GB USED" : `${ramUsed.toFixed(1)} GB USED // ${ram === null ? "--" : ram.toFixed(1)}%`);
+  setText("resourceFresh", `UPDATED ${time()}`);
+
+  const vramLevel = vramPct === null ? "ok" : vramPct >= 90 ? "hot" : vramPct >= 80 ? "warn" : "ok";
+  if(vramLevel !== lastVramAlertLevel){
+    if(vramLevel === "hot") pushThought(`VRAM PRESSURE HIGH // ${Math.round(vramPct)}%`, "bad");
+    else if(vramLevel === "warn") pushThought(`VRAM PRESSURE ELEVATED // ${Math.round(vramPct)}%`, "warn");
+    else if(lastVramAlertLevel !== "ok") pushThought("VRAM PRESSURE NORMALIZED", "ok");
+    lastVramAlertLevel = vramLevel;
+  }
+
+  const cpuLevel = cpu === null ? "ok" : cpu >= 85 ? "hot" : "ok";
+  if(cpuLevel !== lastCpuAlertLevel){
+    if(cpuLevel === "hot") pushThought(`HOST CPU SPIKE // ${Math.round(cpu)}%`, "warn");
+    else if(lastCpuAlertLevel !== "ok") pushThought("HOST CPU NORMALIZED", "ok");
+    lastCpuAlertLevel = cpuLevel;
+  }
+}
+
+function updateAssistant(){
+  const assist = first("assist")?.state;
+  const media = first("media")?.state;
+  const mute = first("mute")?.state;
+  const convoA = first("convoA")?.state;
+  const convoB = first("convoB")?.state;
+  const follow = first("follow")?.state;
+  const active = ["listening","processing","responding"].includes(assist) || convoA === "on" || convoB === "on";
+  const mode = assist === "listening" ? "LISTENING" : assist === "processing" ? "THINKING" : assist === "responding" ? "SPEAKING" : active ? "ACTIVE" : "WATCH";
+
+  setText("coreMode", mode);
+  setText("assistState", fmtState(assist));
+  setText("mediaState", fmtState(media));
+  setText("convoState", `${fmtState(convoA)} / ${fmtState(convoB)}`);
+  setText("muteState", fmtState(mute));
+  setText("followCount", follow || "--");
+  setText("modelState", loadedModels[0]?.name || "NONE");
+  setText("moodLine", `${mode} // ${loadedModels[0]?.name || "NO MODEL"} // ${time()}`);
+}
+
+function serviceClass(state){
+  if(state === "on" || state === "idle" || state === "preferred" || state === "responding" || state === "listening" || state === "processing") return "online";
+  if(state === "unknown" || state === "unavailable" || !state) return "offline";
+  if(state === "off") return "warn";
+  return "warn";
+}
+
+function renderServices(){
+  $("svcGrid").innerHTML = SERVICES.map(([name,key]) => {
+    let cls = "warn";
+    let label = "WAIT";
+    if(key === "internal:ollama"){ cls = servicesStatus.ollama ? "online" : "offline"; label = servicesStatus.ollama ? "ONLINE" : "OFFLINE"; }
+    else{
+      const s = stateByEntity.get(key);
+      cls = serviceClass(s?.state);
+      label = s ? fmtState(s.state) : "NO DATA";
+    }
+    return `<div class="svc ${cls}"><div class="svc-name">${escapeHtml(name)}</div><div class="svc-state">${escapeHtml(label)}</div></div>`;
+  }).join("");
+}
+
+function renderAutomations(){
+  $("autoGrid").innerHTML = AUTOMATIONS.map(([name,entity]) => {
+    const s = stateByEntity.get(entity);
+    const cls = s?.state === "on" ? "on" : s?.state === "off" ? "off" : "bad";
+    const label = s ? fmtState(s.state) : "NO DATA";
+    return `<div class="auto-item ${cls}"><div class="auto-name">${escapeHtml(name)}</div><div class="auto-state">${escapeHtml(label)}</div></div>`;
+  }).join("");
+}
+
+function updateAll(){
+  updateResources();
+  updateAssistant();
+  renderServices();
+  renderAutomations();
+}
+
+function watchChange(entity, oldState, newState){
+  if(!entity || oldState === undefined || oldState === newState) return;
+  const watched = new Set([
+    ...Object.values(ENTITIES).flat(),
+    ...SERVICES.map(x => x[1]).filter(x => !x.startsWith("internal:")),
+    ...AUTOMATIONS.map(x => x[1])
+  ]);
+  if(!watched.has(entity)) return;
+  const cls = newState === "unavailable" ? "bad" : entity.startsWith("sensor.") ? "system" : "ha";
+  pushOps(`${entity} // ${oldState} -> ${newState}`, cls, entity.startsWith("sensor.") ? "SYS" : "HA");
+  pushThought(`${entity.split(".").pop()} changed // ${newState}`, cls);
+  lastState.set(entity, newState);
+}
+
+async function loadInitialStates(){
+  if(!HA_TOKEN) return;
+  const response = await fetch("/api/states", { headers:{Authorization:`Bearer ${HA_TOKEN}`}, cache:"no-store" });
+  if(!response.ok) throw new Error(`HA states ${response.status}`);
+  const states = await response.json();
+  for(const state of states) stateByEntity.set(state.entity_id, state);
+  servicesStatus.ha = true;
+  updateAll();
+  pushOps(`HA STATES LOADED // ${states.length} ENTITIES`, "ha", "HA");
+}
+
+function connectWebSocket(){
+  if(!HA_TOKEN) return;
+  const ws = new WebSocket(HA_WS);
+  ws.onopen = () => pushOps("HA WEBSOCKET OPEN", "ha", "HA");
+  ws.onmessage = event => {
+    const msg = JSON.parse(event.data);
+    if(msg.type === "auth_required") ws.send(JSON.stringify({type:"auth", access_token:HA_TOKEN}));
+    else if(msg.type === "auth_ok"){
+      servicesStatus.ws = true;
+      ws.send(JSON.stringify({id:wsMsgId++, type:"subscribe_events", event_type:"state_changed"}));
+      renderServices();
+      pushOps("LIVE STATE SUBSCRIBED", "ha", "HA");
+    }else if(msg.type === "event" && msg.event?.event_type === "state_changed"){
+      const data = msg.event.data;
+      const oldState = data.old_state?.state;
+      const next = data.new_state;
+      if(next){
+        stateByEntity.set(data.entity_id, next);
+        watchChange(data.entity_id, oldState, next.state);
+        updateAll();
+      }
+    }
+  };
+  ws.onclose = () => { servicesStatus.ws = false; renderServices(); pushOps("HA WEBSOCKET CLOSED // RETRYING", "warn", "HA"); setTimeout(connectWebSocket, 4000); };
+  ws.onerror = () => { servicesStatus.ws = false; renderServices(); };
+}
+
+async function pollOllama(){
+  try{
+    const [ps, version] = await Promise.all([
+      fetch(`${OLLAMA_URL}/api/ps`, {cache:"no-store"}).then(r => r.ok ? r.json() : Promise.reject(new Error(r.status))),
+      fetch(`${OLLAMA_URL}/api/version`, {cache:"no-store"}).then(r => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    servicesStatus.ollama = true;
+    setText("ollamaVersion", version?.version ? `VERSION ${version.version}` : "ONLINE");
+    const models = ps.models || [];
+    const previous = loadedModels.map(m => m.name).join("|");
+    loadedModels = models.map(model => ({
+      name: model.name || model.model || "unknown",
+      size: formatBytes(model.size || 0),
+      vram: formatBytes(model.size_vram || 0),
+      until: model.expires_at ? new Date(model.expires_at).toLocaleTimeString("en-US",{hour12:false}) : "KEEP",
+      context: model.context_length || model.details?.parameter_size || "--"
+    }));
+    const current = loadedModels.map(m => m.name).join("|");
+    if(current !== previous){
+      pushOps(`OLLAMA MODEL SET // ${loadedModels.length} LOADED`, "model", "MODEL");
+      pushThought(loadedModels.length ? `MODEL READY // ${loadedModels[0].name}` : "OLLAMA ONLINE // NO MODEL LOADED", loadedModels.length ? "model" : "warn");
+    }
+    $("modelList").innerHTML = loadedModels.length ? renderLoadedModels(loadedModels) : `<div class="empty">OLLAMA ONLINE // NO MODELS LOADED</div>`;
+  }catch{
+    servicesStatus.ollama = false;
+    setText("ollamaVersion","OFFLINE");
+    $("modelList").innerHTML = `<div class="empty">OLLAMA UNREACHABLE // ${OLLAMA_URL}</div>`;
+    pushOps("OLLAMA UNREACHABLE", "bad", "MODEL");
+  }
+  updateAssistant();
+  renderServices();
+}
+
+function renderLoadedModels(models){
+  const primary = models[0];
+  const cards = models.slice(0,2).map(model => (
+    `<div class="model"><div><div class="model-name">${escapeHtml(model.name)}</div><div class="model-meta">${model.vram} VRAM // CTX ${escapeHtml(model.context)} // ${model.until}</div></div><div class="tag">LOADED</div></div>`
+  )).join("");
+  return `${cards}
+    <div class="llm-detail">
+      <div class="wide"><div class="llm-k">CURRENT LLM</div><div class="llm-v hot">${escapeHtml(primary.name)}</div></div>
+      <div><div class="llm-k">MODEL MEMORY</div><div class="llm-v">${escapeHtml(primary.size)}</div></div>
+      <div><div class="llm-k">VRAM LOAD</div><div class="llm-v">${escapeHtml(primary.vram)}</div></div>
+      <div><div class="llm-k">CONTEXT</div><div class="llm-v">${escapeHtml(primary.context)}</div></div>
+      <div><div class="llm-k">UNLOADS</div><div class="llm-v">${escapeHtml(primary.until)}</div></div>
+    </div>`;
+}
+
+function formatBytes(bytes){
+  const n = Number(bytes);
+  if(!Number.isFinite(n) || n <= 0) return "--";
+  const gb = n / 1024 / 1024 / 1024;
+  return gb >= 1 ? `${gb.toFixed(1)} GB` : `${(n / 1024 / 1024).toFixed(0)} MB`;
+}
+
+function boot(){
+  $("svcGrid").innerHTML = SERVICES.map(([name]) => `<div class="svc warn"><div class="svc-name">${escapeHtml(name)}</div><div class="svc-state">WAIT</div></div>`).join("");
+  $("autoGrid").innerHTML = AUTOMATIONS.map(([name]) => `<div class="auto-item off"><div class="auto-name">${escapeHtml(name)}</div><div class="auto-state">WAIT</div></div>`).join("");
+  pushOps("FREYA PANEL INITIALIZED", "runtime", "BOOT");
+  pushThought("FREYA TRACE ONLINE // LIVE EVENTS STREAMING", "system");
+  if(!HA_TOKEN) pushOps("HA SESSION TOKEN UNAVAILABLE // USING OLLAMA ONLY", "warn", "HA");
+  else loadInitialStates().then(connectWebSocket).catch(err => pushOps(`HA API ERROR // ${err.message}`, "bad", "HA"));
+  pollOllama();
+  setInterval(pollOllama, 5000);
+}
+
+boot();
+</script>
+</body>
+</html>

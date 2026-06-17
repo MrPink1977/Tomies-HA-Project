@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POWER CENTER // FREYA</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0c0e; --bg2:#0f1215; --bg3:#151a1e; --border:#1e2830;
+  --amber:#e8890c; --green:#00ff88; --red:#ff3b3b; --yellow:#ffbf20; --blue:#4d8dff;
+  --text:#c8d8e8; --text2:#6a8090; --text3:#3a5060;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);pointer-events:none;z-index:9999;}
+.shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.sbar{display:flex;align-items:center;justify-content:space-between;padding:2px 12px;background:linear-gradient(90deg,rgba(232,137,12,0.09),rgba(232,137,12,0.025));border-bottom:1px solid rgba(232,137,12,0.28);flex-shrink:0;height:28px;}
+.sbar::before{content:'';width:3px;align-self:stretch;margin:5px 9px 5px 0;background:var(--amber);box-shadow:0 0 10px rgba(232,137,12,0.48);}
+.sbar-title{margin-right:auto;font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--amber);letter-spacing:3px;text-shadow:0 0 8px rgba(232,137,12,0.45);white-space:nowrap;}
+.pill{display:flex;align-items:center;gap:5px;border:1px solid rgba(232,137,12,0.24);background:rgba(15,18,21,0.85);padding:1px 7px;font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--text2);}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.summary{display:grid;grid-template-columns:1.15fr 1fr 1fr .85fr;gap:2px;padding:3px 6px 2px;flex-shrink:0;}
+.sum-card{background:linear-gradient(180deg,var(--bg2),#090b0d);border:1px solid var(--border);border-top:2px solid var(--amber);padding:3px 7px;min-width:0;}
+.sum-card.main{border-top-color:var(--green);}
+.sum-label{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--text2);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sum-sub{font-family:'Share Tech Mono',monospace;font-size:6px;color:var(--text3);letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sum-val{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--amber);letter-spacing:1px;line-height:.95;white-space:nowrap;}
+.sum-card.main .sum-val{color:var(--green);text-shadow:0 0 8px rgba(0,255,136,.12)}
+.sum-val span{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--text2);margin-left:2px;}
+.panel{flex:1;overflow:hidden;padding:2px 6px 4px;display:grid;grid-template-columns:1fr 1fr;gap:2px;align-content:start;}
+.brk{background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--border);padding:2px 6px;display:flex;justify-content:space-between;align-items:center;transition:all 0.4s ease;min-height:21px;}
+.brk.idle  { border-left-color:var(--border); background:var(--bg2); }
+.brk.low   { border-left-color:rgba(0,255,136,0.6); background:rgba(0,255,136,0.04); box-shadow:0 0 8px rgba(0,255,136,0.06); }
+.brk.med   { border-left-color:rgba(255,191,32,0.7); background:rgba(255,191,32,0.06); box-shadow:0 0 8px rgba(255,191,32,0.08); }
+.brk.high  { border-left-color:rgba(255,59,59,0.8); background:rgba(255,59,59,0.08); box-shadow:0 0 10px rgba(255,59,59,0.10); }
+.brk-left{display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0;}
+.brk-num{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--text3);letter-spacing:1px;}
+.brk-name{font-family:'Rajdhani',sans-serif;font-size:10.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:142px;}
+.brk-watts{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1px;text-align:right;flex-shrink:0;}
+.brk.idle .brk-watts{color:var(--text3);} .brk.low .brk-watts{color:var(--green);} .brk.med .brk-watts{color:var(--yellow);} .brk.high .brk-watts{color:var(--red);}
+.brk-unit{font-family:'Share Tech Mono',monospace;font-size:7px;color:var(--text3);}
+.rbar{height:2px;background:var(--border);position:fixed;bottom:0;left:0;right:0;z-index:200;}.rfill{height:100%;background:var(--amber);width:0%;transition:width linear;}
+@media (max-height:330px){.summary{grid-template-columns:1fr 1fr 1fr;}.sum-card:nth-child(4){display:none}.sum-val{font-size:17px}.brk{min-height:18px;padding-top:1px;padding-bottom:1px}.brk-name{font-size:9.5px}.brk-watts{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="sbar">
+    <div class="sbar-title">⚡ POWER CENTER</div>
+    <div class="pill"><div class="sdot"></div><span>LIVE LOAD</span></div>
+  </div>
+  <div class="summary">
+    <div class="sum-card main"><div class="sum-label">TOTAL LOAD</div><div class="sum-val" id="total-load">--<span>W</span></div></div>
+    <div class="sum-card"><div class="sum-label">LEG 1 — SEM C</div><div class="sum-val" id="leg-c">--<span>W</span></div></div>
+    <div class="sum-card"><div class="sum-label">LEG 2 — SEM B</div><div class="sum-val" id="leg-b">--<span>W</span></div></div>
+    <div class="sum-card"><div class="sum-label">ACTIVE</div><div class="sum-val" id="active-count">--</div></div>
+  </div>
+  <div class="panel" id="panel"></div>
+</div>
+<div class="rbar"><div class="rfill" id="rfill"></div></div>
+<script>
+const HA   = location.origin;
+const TOK  = getHaToken();
+const POLL = 8000;
+
+function getHaToken(){try{const raw=localStorage.getItem('hassTokens');return raw?JSON.parse(raw).access_token||'':'';}catch{return '';}}
+
+// Blanks removed: only real mapped circuits render.
+// 240V loads are shown on both physical breaker positions, but TOTAL uses main leg sensors so it does not double-count duplicated channels.
+const BREAKERS = [
+  [1,  'CH16 — Garage Heater',      'sensor.sem_ch16_garage_heater_3_active_power'],
+  [2,  'CH01 — Bdrm Minisplit',     'sensor.sem_ch01_bdrm_minisplit_2_active_power'],
+  [3,  'CH16 — Garage Heater P2',   'sensor.sem_ch16_garage_heater_3_active_power'],
+  [5,  'CH15 — Bdrm Outlet N',      'sensor.sem_ch15_outlets_bdrm_n_light_bench_5_active_power'],
+  [6,  'CH02 — Tool Rm / Garage',   'sensor.sem_ch02_toorlm_ceiling_dooropener_6_active_power_2'],
+  [7,  'CH14 — Kitchen Outlets',    'sensor.sem_ch14_outlets_bedroom_bench_7_active_power'],
+  [8,  'CH03 — Dryer 240V',         'sensor.sem_ch03_wash_dry_oven_10_active_power'],
+  [9,  'CH13 — Main Lights',        'sensor.sem_ch13_mainlights_9_active_power'],
+  [10, 'CH03 — Oven 240V',          'sensor.sem_ch03_wash_dry_oven_10_active_power'],
+  [11, 'CH12 — Septic Aerator',     'sensor.sem_ch12_septic_aerator_11_active_power'],
+  [12, 'CH04 — Water Heater',       'sensor.sem_ch04_waterheater_12_active_power'],
+  [13, 'CH11 — Outside W Outlet',   'sensor.sem_ch11_outlets_outside_west_13_active_power'],
+  [14, 'CH05 — Bdrm Outlets E,S',   'sensor.sem_ch05_outlets_bdrm_se_14_active_power'],
+  [15, 'CH10 — GH Minisplit',       'sensor.sem_ch10_minisplit_grhouse_15_active_power'],
+  [16, 'CH06 — Tool Rm Outlets',    'sensor.sem_ch06_outlets_toolroom_16_active_power'],
+  [18, 'CH07 — GH Outlets',         'sensor.sem_ch07_outlets_grhouse_18_active_power'],
+  [19, 'CH09 — GH Outlet 2',        'sensor.sem_ch09_outlets_grhouse_19_active_power'],
+  [22, 'CH08 — Porch Light',        'sensor.sem_ch08_porchlight_22_active_power'],
+];
+const LEG_C = 'sensor.sem_c_active_power';
+const LEG_B = 'sensor.sem_b_active_power';
+function buildPanel() {
+  const p = document.getElementById('panel');
+  p.innerHTML = '';
+  BREAKERS.forEach(([slot,label]) => {
+    const div = document.createElement('div');
+    div.className = 'brk idle'; div.id = `brk-${slot}`;
+    div.innerHTML = `<div class="brk-left"><div class="brk-num">B${slot}</div><div class="brk-name">${label}</div></div><div><div class="brk-watts" id="w-${slot}">--</div><div class="brk-unit">W</div></div>`;
+    p.appendChild(div);
+  });
+}
+function wClass(w) { return w>=1500?'high':w>=700?'med':w>=80?'low':'idle'; }
+async function getState(e) {
+  if (!TOK) return null;
+  try { const r=await fetch(`${HA}/api/states/${e}`,{headers:{Authorization:`Bearer ${TOK}`},cache:'no-store'});return r.ok?(await r.json()).state:null; } catch { return null; }
+}
+function startBar() {
+  const f=document.getElementById('rfill');f.style.transition='none';f.style.width='0%';
+  setTimeout(()=>{f.style.transition=`width ${POLL}ms linear`;f.style.width='100%';},50);
+}
+function setVal(id,n,unit='W'){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.innerHTML=isNaN(n)?'--'+(unit?`<span>${unit}</span>`:''):`${Math.round(n)}${unit?`<span>${unit}</span>`:''}`;
+}
+async function poll() {
+  startBar();
+  const entities = [...new Set([...BREAKERS.map(b=>b[2]), LEG_C, LEG_B])];
+  const results = {};
+  await Promise.all(entities.map(async e=>{results[e]=await getState(e);}));
+  const ok=Object.values(results).some(v=>v!==null);
+
+  const legC=parseFloat(results[LEG_C]);
+  const legB=parseFloat(results[LEG_B]);
+  const total = (!isNaN(legC) || !isNaN(legB)) ? (isNaN(legC)?0:legC) + (isNaN(legB)?0:legB) : NaN;
+  setVal('total-load', total);
+  setVal('leg-c', legC);
+  setVal('leg-b', legB);
+
+  let active=0;
+  BREAKERS.forEach(([slot,,entity])=>{
+    const el=document.getElementById(`brk-${slot}`),wel=document.getElementById(`w-${slot}`);
+    if(!el||!wel)return;
+    const w=parseFloat(results[entity]);
+    if(!isNaN(w) && w>=80) active++;
+    el.className='brk '+(isNaN(w)?'idle':wClass(w));
+    wel.textContent=isNaN(w)?'--':Math.round(w);
+  });
+  document.getElementById('active-count').textContent=ok?active:'--';
+}
+buildPanel();poll();setInterval(poll,POLL);
+</script>
+</body>
+</html>

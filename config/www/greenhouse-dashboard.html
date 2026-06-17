@@ -14,15 +14,19 @@
 }
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:'Rajdhani',sans-serif; }
-.pill { position:fixed; top:4px; right:6px; display:flex; align-items:center; gap:5px; padding:2px 8px; border:1px solid var(--border); background:rgba(15,18,21,0.85); font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:1px; z-index:50; }
+.tbar { height:28px; min-height:28px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-bottom:1px solid rgba(0,255,136,0.28); background:linear-gradient(90deg,rgba(0,255,136,0.09),rgba(0,255,136,0.025)); }
+.tbar::before { content:''; width:3px; align-self:stretch; margin:5px 9px 5px 0; background:var(--green); box-shadow:0 0 10px rgba(0,255,136,0.48); }
+.tbar-title { margin-right:auto; font-family:'Bebas Neue',sans-serif; font-size:15px; letter-spacing:3px; color:var(--green); text-shadow:0 0 8px rgba(0,255,136,0.4); white-space:nowrap; }
+.tbar-title .tic { margin-right:6px; }
+.pill { display:inline-flex; align-items:center; gap:5px; padding:1px 7px; border:1px solid rgba(0,255,136,0.24); background:rgba(15,18,21,0.85); font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:1px; }
 .sdot { width:6px; height:6px; border-radius:50%; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 .alert { background:rgba(255,68,68,0.12); border-bottom:1px solid rgba(255,68,68,0.3); padding:3px 14px; font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--red); letter-spacing:1px; display:none; }
 .alert.on { display:block; animation:afl 1s infinite; }
 @keyframes afl { 0%,100%{opacity:1} 50%{opacity:0.5} }
-.cols { display:grid; grid-template-columns:1fr 1fr; height:100vh; overflow:hidden; }
-.alert.on ~ .cols { height:calc(100vh - 28px); }
-.col { padding:6px 10px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:5px; overflow:hidden; }
+.cols { display:grid; grid-template-columns:1fr 1fr; height:calc(100vh - 28px); overflow:hidden; }
+.alert.on ~ .cols { height:calc(100vh - 56px); }
+.col { padding:4px 10px 6px; border-right:1px solid var(--border); display:flex; flex-direction:column; gap:4px; overflow:hidden; }
 .col:last-child { border-right:none; }
 .sec { display:flex; align-items:center; gap:6px; }
 .sec-lbl { font-family:'Bebas Neue',sans-serif; font-size:12px; letter-spacing:3px; color:var(--green); white-space:nowrap; }
@@ -44,7 +48,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .sval.h-warn { color:var(--warn); }
 .sunit { font-family:'Rajdhani',sans-serif; font-size:11px; color:var(--text2); font-weight:500; }
 .sstatus { font-family:'Share Tech Mono',monospace; font-size:7px; letter-spacing:1px; margin-top:2px; color:var(--text3); }
-.zlbl { font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--green); letter-spacing:2px; padding:1px 0; }
+.zlbl { font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--green); letter-spacing:2px; padding:0; }
 .pcard { background:var(--bg2); border:1px solid var(--border); padding:5px 8px; transition:all 0.3s; }
 .pcard.running { border-color:rgba(0,255,136,0.35); background:rgba(0,255,136,0.03); }
 .pcard.heating { border-color:rgba(255,107,53,0.35); background:rgba(255,107,53,0.03); }
@@ -65,13 +69,30 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
 .pbar-fill.fan  { background:linear-gradient(90deg,#1a8050,var(--green)); }
 .pbar-fill.heat { background:linear-gradient(90deg,var(--warn),var(--red)); }
 .pmode { font-family:'Share Tech Mono',monospace; font-size:7px; color:var(--text3); margin-top:3px; letter-spacing:1px; }
+.ctl { margin-top:4px; border-top:1px solid rgba(0,255,136,0.12); padding-top:4px; display:grid; grid-template-columns:1fr 1fr; gap:3px; }
+.ctl-wide { grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; gap:3px; }
+.ctlbox { min-width:0; border:1px solid rgba(58,80,96,0.7); background:rgba(5,8,10,0.4); padding:3px 4px; }
+.ctlbox.on { border-color:rgba(0,255,136,0.35); background:rgba(0,255,136,0.05); }
+.ctllbl { font-family:'Share Tech Mono',monospace; font-size:6px; color:#2a8050; letter-spacing:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ctlval { display:flex; align-items:center; justify-content:space-between; gap:3px; margin-top:1px; }
+.ctlval span { font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--text); white-space:nowrap; }
+.cbtn { width:18px; height:16px; border:1px solid var(--border); background:transparent; color:var(--text2); font-family:'Share Tech Mono',monospace; font-size:10px; line-height:1; cursor:pointer; }
+.cbtn:hover { color:var(--green); border-color:rgba(0,255,136,0.4); }
+.swbtn { width:auto; min-width:36px; padding:1px 5px; font-size:7px; letter-spacing:1px; }
+.swbtn.on { color:var(--green); border-color:rgba(0,255,136,0.4); background:rgba(0,255,136,0.1); }
 .div { height:1px; background:var(--border); }
 .rbar { height:2px; background:var(--border); position:fixed; bottom:0; left:0; right:0; }
 .rbar-fill { height:100%; background:var(--green); width:0%; transition:width linear; }
+@media (max-height: 620px) {
+  .ctl { display:none; }
+}
 </style>
 </head>
 <body>
-<div class="pill"><div class="sdot" id="sdot" style="background:var(--text3)"></div><span id="slabel">CONNECTING</span></div>
+<div class="tbar">
+  <div class="tbar-title"><span class="tic">&#127807;</span>GREENHOUSE</div>
+  <div class="pill"><div class="sdot" id="sdot" style="background:var(--text3)"></div><span id="slabel">CONNECTING</span></div>
+</div>
 <div class="alert" id="alert">⚠ TEMP ALERT</div>
 <div class="cols">
   <div class="col">
@@ -93,6 +114,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
       <div class="pbar-top"><span>POWER</span><span id="gh-ex-pow">--</span></div>
       <div class="pbar"><div class="pbar-fill fan" id="gh-ex-bar" style="width:0%"></div></div>
       <div class="pmode">TRIGGER: TEMP &gt; 80°F</div>
+      <div class="ctl" data-control="gh_ex"></div>
     </div>
     <div class="pcard" id="gh-co-card">
       <div class="phead">
@@ -106,16 +128,15 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
       <div class="pbar-top"><span>POWER</span><span id="gh-co-pow">--</span></div>
       <div class="pbar"><div class="pbar-fill fan" id="gh-co-bar" style="width:0%"></div></div>
       <div class="pmode">HUMIDITY CONTROLLED</div>
+      <div class="ctl" data-control="gh_co"></div>
     </div>
   </div>
   <div class="col">
     <div class="sec"><div class="sec-lbl">TENT 1 &amp; 2</div><div class="sec-line"></div><div class="sec-tag" id="tent-tag">CTR69P // --</div></div>
-    <div class="zlbl">TENT 1</div>
     <div class="srow">
       <div class="scard temp-ok" id="t1-tc"><div class="slbl">TEMPERATURE</div><div><span class="sval t-ok" id="t1-temp">--</span><span class="sunit">°F</span></div><div class="sstatus" id="t1-ts">--</div></div>
       <div class="scard humid-ok" id="t1-hc"><div class="slbl">HUMIDITY</div><div><span class="sval h-ok" id="t1-humid">--</span><span class="sunit">%</span></div><div class="sstatus" id="t1-hs">--</div></div>
     </div>
-    <div class="zlbl">TENT 2</div>
     <div class="srow">
       <div class="scard temp-ok" id="t2-tc"><div class="slbl">TEMPERATURE</div><div><span class="sval t-ok" id="t2-temp">--</span><span class="sunit">°F</span></div><div class="sstatus" id="t2-ts">--</div></div>
       <div class="scard humid-ok" id="t2-hc"><div class="slbl">HUMIDITY</div><div><span class="sval h-ok" id="t2-humid">--</span><span class="sunit">%</span></div><div class="sstatus" id="t2-hs">--</div></div>
@@ -133,6 +154,7 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
       <div class="pbar-top"><span>LEVEL</span><span id="t-heat-pow">--</span></div>
       <div class="pbar"><div class="pbar-fill heat" id="t-heat-bar" style="width:0%"></div></div>
       <div class="pmode" id="t-heat-mode">--</div>
+      <div class="ctl" data-control="t_heat"></div>
     </div>
     <div class="pcard" id="t-vent-card">
       <div class="phead">
@@ -146,13 +168,14 @@ html, body { height:100%; overflow:hidden; background:var(--bg); color:var(--tex
       <div class="pbar-top"><span>POWER</span><span id="t-vent-pow">--</span></div>
       <div class="pbar"><div class="pbar-fill fan" id="t-vent-bar" style="width:0%"></div></div>
       <div class="pmode" id="t-vent-mode">MODE: CYCLE</div>
+      <div class="ctl" data-control="t_vent"></div>
     </div>
   </div>
 </div>
 <div class="rbar"><div class="rbar-fill" id="rfill"></div></div>
 <script>
-const HA_URL='http://localhost:8123';
-const HA_TOKEN='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI4MjcxYzMzM2Q1NTk0ODA1YjQ1YTQxM2U1ZjEwOTJlNSIsImlhdCI6MTc3MjQzMzUwMywiZXhwIjoyMDg3NzkzNTAzfQ.cxWfPAjDx2d9D_GNO_RjDtqjir2giySVPydz6Miwj0Q';
+const HA_URL=location.origin;
+const HA_TOKEN=getHaToken();
 const POLL_MS=15000;
 const E={
   gh_temp:'sensor.daniels_controller_temperature',
@@ -160,11 +183,25 @@ const E={
   gh_ex_status:'binary_sensor.daniels_controller_ceiling_fan_status',
   gh_ex_state:'binary_sensor.daniels_controller_ceiling_fan_state',
   gh_ex_power:'sensor.daniels_controller_ceiling_fan_current_power',
+  gh_ex_next:'sensor.daniels_controller_ceiling_fan_next_state_change',
   gh_ex_mode:'select.greenhouse_mains_gh_exhaust_active_mode',
+  gh_ex_cycle_on:'number.greenhouse_mains_gh_exhaust_cycle_minutes_on',
+  gh_ex_cycle_off:'number.greenhouse_mains_gh_exhaust_cycle_minutes_off',
+  gh_ex_temp_high:'number.greenhouse_mains_gh_exhaust_temperature_high_trigger',
+  gh_ex_temp_low:'number.greenhouse_mains_gh_exhaust_temperature_low_trigger',
+  gh_ex_temp_high_on:'switch.greenhouse_mains_gh_exhaust_temperature_high_trigger_enabled',
+  gh_ex_temp_low_on:'switch.greenhouse_mains_gh_exhaust_temperature_low_trigger_enabled',
   gh_co_status:'binary_sensor.greenhouse_mains_gh_cooler_status',
   gh_co_state:'binary_sensor.greenhouse_mains_gh_cooler_state',
   gh_co_power:'sensor.greenhouse_mains_gh_cooler_current_power',
+  gh_co_next:'sensor.greenhouse_mains_gh_cooler_next_state_change',
   gh_co_mode:'select.greenhouse_mains_gh_cooler_active_mode',
+  gh_co_cycle_on:'number.greenhouse_mains_gh_cooler_cycle_minutes_on',
+  gh_co_cycle_off:'number.greenhouse_mains_gh_cooler_cycle_minutes_off',
+  gh_co_temp_high:'number.greenhouse_mains_gh_cooler_temperature_high_trigger',
+  gh_co_temp_low:'number.greenhouse_mains_gh_cooler_temperature_low_trigger',
+  gh_co_temp_high_on:'switch.greenhouse_mains_gh_cooler_temperature_high_trigger_enabled',
+  gh_co_temp_low_on:'switch.greenhouse_mains_gh_cooler_temperature_low_trigger_enabled',
   t1_temp:'sensor.tent1_2_controller_temperature',
   t1_humid:'sensor.tent1_2_controller_humidity',
   t2_temp:'sensor.tent1_2_probe_sensor_probe_temperature',
@@ -172,16 +209,36 @@ const E={
   t_heat_status:'binary_sensor.tent1_2_heater_status',
   t_heat_state:'binary_sensor.tent1_2_heater_state',
   t_heat_power:'sensor.tent1_2_heater_current_power',
+  t_heat_next:'sensor.tent1_2_heater_next_state_change',
   t_heat_mode:'select.tent1_2_heater_active_mode',
+  t_heat_cycle_on:'number.tent1_2_heater_cycle_minutes_on',
+  t_heat_cycle_off:'number.tent1_2_heater_cycle_minutes_off',
+  t_heat_temp_high:'number.tent1_2_heater_temperature_high_trigger',
+  t_heat_temp_low:'number.tent1_2_heater_temperature_low_trigger',
+  t_heat_temp_high_on:'switch.tent1_2_heater_temperature_high_trigger_enabled',
+  t_heat_temp_low_on:'switch.tent1_2_heater_temperature_low_trigger_enabled',
   t_vent_status:'binary_sensor.tent1_2_vent_fan_status',
   t_vent_state:'binary_sensor.tent1_2_vent_fan_state',
   t_vent_power:'sensor.tent1_2_vent_fan_current_power',
+  t_vent_next:'sensor.tent1_2_vent_fan_next_state_change',
   t_vent_mode:'select.tent1_2_vent_fan_active_mode',
+  t_vent_cycle_on:'number.tent1_2_vent_fan_cycle_minutes_on',
+  t_vent_cycle_off:'number.tent1_2_vent_fan_cycle_minutes_off',
+  t_vent_temp_high:'number.tent1_2_vent_fan_temperature_high_trigger',
+  t_vent_temp_low:'number.tent1_2_vent_fan_temperature_low_trigger',
+  t_vent_temp_high_on:'switch.tent1_2_vent_fan_temperature_high_trigger_enabled',
+  t_vent_temp_low_on:'switch.tent1_2_vent_fan_temperature_low_trigger_enabled',
+};
+const CONTROL_PORTS={
+  gh_ex:{cycleOn:E.gh_ex_cycle_on,cycleOff:E.gh_ex_cycle_off,tempHigh:E.gh_ex_temp_high,tempLow:E.gh_ex_temp_low,tempHighOn:E.gh_ex_temp_high_on,tempLowOn:E.gh_ex_temp_low_on,next:E.gh_ex_next},
+  gh_co:{cycleOn:E.gh_co_cycle_on,cycleOff:E.gh_co_cycle_off,tempHigh:E.gh_co_temp_high,tempLow:E.gh_co_temp_low,tempHighOn:E.gh_co_temp_high_on,tempLowOn:E.gh_co_temp_low_on,next:E.gh_co_next},
+  t_heat:{cycleOn:E.t_heat_cycle_on,cycleOff:E.t_heat_cycle_off,tempHigh:E.t_heat_temp_high,tempLow:E.t_heat_temp_low,tempHighOn:E.t_heat_temp_high_on,tempLowOn:E.t_heat_temp_low_on,next:E.t_heat_next},
+  t_vent:{cycleOn:E.t_vent_cycle_on,cycleOff:E.t_vent_cycle_off,tempHigh:E.t_vent_temp_high,tempLow:E.t_vent_temp_low,tempHighOn:E.t_vent_temp_high_on,tempLowOn:E.t_vent_temp_low_on,next:E.t_vent_next},
 };
 const g=id=>document.getElementById(id);
 const fv=v=>parseFloat(v);
 const f1=v=>{const n=fv(v);return isNaN(n)?'--':n.toFixed(1);};
-async function getSt(id){try{const r=await fetch(`${HA_URL}/api/states/${id}`,{headers:{Authorization:`Bearer ${HA_TOKEN}`}});return r.ok?(await r.json()).state:null;}catch{return null;}}
+async function getSt(id){if(!HA_TOKEN)return null;try{const r=await fetch(`${HA_URL}/api/states/${id}`,{headers:{Authorization:`Bearer ${HA_TOKEN}`}});return r.ok?(await r.json()).state:null;}catch{return null;}}
 function tCardClass(t){return isNaN(t)?'scard temp-ok':t>=80?'scard temp-hot':t>=75?'scard temp-warm':'scard temp-ok';}
 function tValClass(t){return isNaN(t)?'sval t-ok':t>=80?'sval t-hot':t>=75?'sval t-warm':'sval t-ok';}
 function tSt(t){if(isNaN(t))return'--';if(t>=80)return'▲ HIGH';if(t>=75)return'▲ WARM';if(t<=55)return'▼ COLD';return'NOMINAL';}
@@ -192,7 +249,36 @@ function isOn(status,state){return state==='on';}
 function setBar(barId,lblId,power,max=10){const bar=g(barId),lbl=g(lblId);if(!bar||!lbl)return;const n=fv(power);bar.style.width=isNaN(n)?'0%':Math.min(100,(n/max)*100)+'%';lbl.textContent=isNaN(n)?'--':n;}
 function startBar(){const f=g('rfill');f.style.transition='none';f.style.width='0%';setTimeout(()=>{f.style.transition=`width ${POLL_MS}ms linear`;f.style.width='100%';},50);}
 function setButtonMode(btnsId,mode,type){const wrap=g(btnsId);if(!wrap)return;wrap.querySelectorAll('.pbtn').forEach(b=>{b.className='pbtn';const t=b.textContent.toLowerCase();if(t==='on'&&mode==='On')b.className=type==='heat'?'pbtn a-heat':'pbtn a-on';if(t==='auto'&&mode==='Auto')b.className='pbtn a-auto';if(t==='off'&&mode==='Off')b.className='pbtn a-off';});}
-async function setMode(selectEntity,btnsId,option,type){setButtonMode(btnsId,option,type);try{await fetch(`${HA_URL}/api/services/select/select_option`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({entity_id:selectEntity,option})});}catch(e){console.warn('setMode failed',e);}setTimeout(poll,1500);}
+async function setMode(selectEntity,btnsId,option,type){setButtonMode(btnsId,option,type);if(!HA_TOKEN)return;try{await fetch(`${HA_URL}/api/services/select/select_option`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({entity_id:selectEntity,option})});}catch(e){console.warn('setMode failed',e);}setTimeout(poll,1500);}
+function renderControls(){
+  document.querySelectorAll('[data-control]').forEach(el=>{
+    const key=el.dataset.control;
+    el.innerHTML=[
+      ctlNumber(key,'cycleOn','CYCLE ON','min',1),
+      ctlNumber(key,'cycleOff','CYCLE OFF','min',1),
+      `<div class="ctl-wide">${ctlNumber(key,'tempLow','TEMP LOW','F',1)}${ctlNumber(key,'tempHigh','TEMP HIGH','F',1)}</div>`,
+      `<div class="ctl-wide">${ctlSwitch(key,'tempLowOn','LOW SENSOR')}${ctlSwitch(key,'tempHighOn','HIGH SENSOR')}</div>`
+    ].join('');
+  });
+}
+function ctlNumber(key,field,label,unit,step){return `<div class="ctlbox"><div class="ctllbl">${label}</div><div class="ctlval"><button class="cbtn" onclick="bumpNumber('${key}','${field}',-${step})">-</button><span id="${key}-${field}">-- ${unit}</span><button class="cbtn" onclick="bumpNumber('${key}','${field}',${step})">+</button></div></div>`;}
+function ctlSwitch(key,field,label){return `<div class="ctlbox" id="${key}-${field}-box"><div class="ctllbl">${label}</div><div class="ctlval"><span id="${key}-${field}">--</span><button class="cbtn swbtn" id="${key}-${field}-btn" onclick="toggleSwitch('${key}','${field}')">--</button></div></div>`;}
+function updateControls(S){
+  Object.keys(CONTROL_PORTS).forEach(key=>{
+    setCtlText(`${key}-cycleOn`,S[`${key}_cycle_on`],' min');
+    setCtlText(`${key}-cycleOff`,S[`${key}_cycle_off`],' min');
+    setCtlText(`${key}-tempLow`,S[`${key}_temp_low`],' F');
+    setCtlText(`${key}-tempHigh`,S[`${key}_temp_high`],' F');
+    setSwitchText(key,'tempLowOn',S[`${key}_temp_low_on`]);
+    setSwitchText(key,'tempHighOn',S[`${key}_temp_high_on`]);
+  });
+}
+function setCtlText(id,value,unit){const el=g(id);if(!el)return;const n=fv(value);el.textContent=isNaN(n)?'--':`${n}${unit}`;}
+function setSwitchText(key,field,state){const label=g(`${key}-${field}`),btn=g(`${key}-${field}-btn`),box=g(`${key}-${field}-box`);const on=state==='on';if(label)label.textContent=on?'ON':'OFF';if(btn){btn.textContent=on?'ON':'OFF';btn.className=on?'cbtn swbtn on':'cbtn swbtn';}if(box)box.className=on?'ctlbox on':'ctlbox';}
+async function bumpNumber(key,field,delta){const cfg=CONTROL_PORTS[key];if(!cfg)return;const entity=cfg[field];const current=await getSt(entity);let next=fv(current);if(isNaN(next))next=0;next+=delta;if(next<0)next=0;await callService('number','set_value',{entity_id:entity,value:next});setTimeout(poll,500);}
+async function toggleSwitch(key,field){const cfg=CONTROL_PORTS[key];if(!cfg)return;const entity=cfg[field];const current=await getSt(entity);await callService('switch',current==='on'?'turn_off':'turn_on',{entity_id:entity});setTimeout(poll,500);}
+async function callService(domain,service,data){if(!HA_TOKEN)return;try{await fetch(`${HA_URL}/api/services/${domain}/${service}`,{method:'POST',headers:{Authorization:`Bearer ${HA_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify(data)});}catch(e){console.warn('service failed',domain,service,e);}}
+function getHaToken(){try{const raw=localStorage.getItem('hassTokens');return raw?JSON.parse(raw).access_token||'':'';}catch{return '';}}
 async function poll(){
   startBar();
   const S={};
@@ -234,7 +320,9 @@ async function poll(){
   setButtonMode('t-vent-btns',S.t_vent_mode||'Off','fan');
   setBar('t-vent-bar','t-vent-pow',S.t_vent_power);
   g('t-vent-mode').textContent=vOn?'CYCLE // ACTIVE':'CYCLE // STANDBY';
+  updateControls(S);
 }
+renderControls();
 poll();setInterval(poll,POLL_MS);
 </script>
 </body>
